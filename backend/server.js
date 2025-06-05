@@ -38,7 +38,12 @@ mongoose
 // Routes
 app.use("/api/auth", require("./routes/auth.routes"));
 app.use("/api/pets", require("./routes/pet.routes"));
+// Thêm route cho products sau route pets:
 app.use("/api/products", require("./routes/product.routes"));
+// Add the new routes after the existing routes:
+app.use("/api/cart", require("./routes/cart.routes"));
+app.use("/api/orders", require("./routes/order.routes"));
+app.use("/api/upload", require("./routes/upload.routes"));
 
 // Basic route for testing
 app.get("/", (req, res) => {
