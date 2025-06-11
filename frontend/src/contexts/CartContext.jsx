@@ -1,5 +1,3 @@
-"use client";
-
 import { createContext, useContext, useReducer, useEffect } from "react";
 import { cartAPI } from "../services/api";
 import { useAuth } from "./AuthContext";
@@ -43,7 +41,7 @@ const cartReducer = (state, action) => {
   }
 };
 
-export const CartProvider = ({ children }) => {
+export function CartProvider({ children }) {
   const [state, dispatch] = useReducer(cartReducer, initialState);
   const { isAuthenticated } = useAuth();
 
@@ -131,12 +129,13 @@ export const CartProvider = ({ children }) => {
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
-};
+}
 
-export const useCart = () => {
+// Sửa cách export hook để tương thích với Fast Refresh
+export function useCart() {
   const context = useContext(CartContext);
   if (!context) {
     throw new Error("useCart must be used within a CartProvider");
   }
   return context;
-};
+}

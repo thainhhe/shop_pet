@@ -14,6 +14,7 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 // Thêm import Footer
 import Footer from "./components/layout/Footer";
 
+
 // Add import for CartProvider and CartPage
 import { CartProvider } from "./contexts/CartContext";
 import CartPage from "./components/cart/CartPage";
@@ -58,7 +59,9 @@ function App() {
                 <Route
                   path="/pets/new"
                   element={
-                    <ProtectedRoute requiredRole="shop_owner">
+                    <ProtectedRoute
+                      requiredRoles={["shop_owner", "rescue_center"]}
+                    >
                       <PetForm />
                     </ProtectedRoute>
                   }

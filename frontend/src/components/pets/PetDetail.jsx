@@ -5,6 +5,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { petsAPI } from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
 import LoadingSpinner from "../common/LoadingSpinner";
+import AdoptionForm from "../adoption/AdoptionForm";
 
 const PetDetail = () => {
   const { id } = useParams();
@@ -14,6 +15,7 @@ const PetDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [showAdoptionForm, setShowAdoptionForm] = useState(false);
 
   useEffect(() => {
     fetchPetDetail();
@@ -23,9 +25,14 @@ const PetDetail = () => {
     try {
       setLoading(true);
       const response = await petsAPI.getPet(id);
+      if (!response.data?.pet) {
+        throw new Error("Dữ liệu thú cưng không hợp lệ");
+      }
       setPet(response.data.pet);
     } catch (err) {
-      setError("Không thể tải thông tin thú cưng");
+      setError(
+        err.response?.data?.message || "Không thể tải thông tin thú cưng"
+      );
       console.error("Fetch pet detail error:", err);
     } finally {
       setLoading(false);
@@ -37,6 +44,14 @@ const PetDetail = () => {
       style: "currency",
       currency: "VND",
     }).format(price);
+  };
+
+  const formatAge = (age) => {
+    if (!age) return "Không có thông tin";
+    if (age.unit === "months") {
+      return `${age.value} tháng`;
+    }
+    return `${age.value} năm`;
   };
 
   const getSpeciesLabel = (species) => {
@@ -62,12 +77,39 @@ const PetDetail = () => {
     return labels[size] || size;
   };
 
+  const getStatusColor = (status) => {
+    const colors = {
+      available: "bg-green-100 text-green-800",
+      pending_adoption: "bg-yellow-100 text-yellow-800",
+      adopted: "bg-gray-100 text-gray-800",
+    };
+    return colors[status] || "bg-gray-100 text-gray-800";
+  };
+
+  const getStatusText = (status) => {
+    const texts = {
+      available: "Có thể nhận nuôi",
+      pending_adoption: "Đang chờ nhận nuôi",
+      adopted: "Đã được nhận nuôi",
+    };
+    return texts[status] || status;
+  };
+
+  const canAdopt = () => {
+    return (
+      isAuthenticated &&
+      pet &&
+      pet.isForAdoption &&
+      pet.status === "available" &&
+      pet.owner?._id !== user?.id
+    );
+  };
+
   const handleContactOwner = () => {
     if (!isAuthenticated) {
       navigate("/login");
       return;
     }
-    // Implement contact functionality
     alert("Tính năng liên hệ sẽ được triển khai sau!");
   };
 
@@ -76,8 +118,7 @@ const PetDetail = () => {
       navigate("/login");
       return;
     }
-    // Implement adoption request functionality
-    alert("Tính năng đăng ký nhận nuôi sẽ được triển khai sau!");
+    setShowAdoptionForm(true);
   };
 
   if (loading) return <LoadingSpinner />;
@@ -125,7 +166,7 @@ const PetDetail = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Images */}
         <div>
-          <div className="mb-4">
+          <div className="relative mb-4">
             <img
               src={
                 pet.images?.[currentImageIndex]?.url ||
@@ -133,7 +174,56 @@ const PetDetail = () => {
               }
               alt={pet.name}
               className="w-full h-96 object-cover rounded-lg"
+              loading="lazy"
             />
+            {pet.images && pet.images.length > 1 && (
+              <>
+                <button
+                  onClick={() =>
+                    setCurrentImageIndex((prev) =>
+                      prev > 0 ? prev - 1 : pet.images.length - 1
+                    )
+                  }
+                  className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 19l-7-7 7-7"
+                    />
+                  </svg>
+                </button>
+                <button
+                  onClick={() =>
+                    setCurrentImageIndex((prev) =>
+                      prev < pet.images.length - 1 ? prev + 1 : 0
+                    )
+                  }
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-75"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                </button>
+              </>
+            )}
           </div>
 
           {pet.images && pet.images.length > 1 && (
@@ -152,6 +242,7 @@ const PetDetail = () => {
                     src={image.url || "/placeholder.svg"}
                     alt={`${pet.name} ${index + 1}`}
                     className="w-full h-full object-cover"
+                    loading="lazy"
                   />
                 </button>
               ))}
@@ -165,8 +256,12 @@ const PetDetail = () => {
             <div className="flex items-center justify-between mb-2">
               <h1 className="text-3xl font-bold text-gray-900">{pet.name}</h1>
               {pet.isForAdoption && (
-                <span className="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-                  Nhận nuôi
+                <span
+                  className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
+                    pet.status
+                  )}`}
+                >
+                  {getStatusText(pet.status)}
                 </span>
               )}
             </div>
@@ -197,16 +292,19 @@ const PetDetail = () => {
               {pet.age && (
                 <div>
                   <span className="text-sm text-gray-500">Tuổi:</span>
-                  <p className="font-medium">
-                    {pet.age.value}{" "}
-                    {pet.age.unit === "months" ? "tháng" : "năm"}
-                  </p>
+                  <p className="font-medium">{formatAge(pet.age)}</p>
                 </div>
               )}
               {pet.weight && (
                 <div>
                   <span className="text-sm text-gray-500">Cân nặng:</span>
                   <p className="font-medium">{pet.weight} kg</p>
+                </div>
+              )}
+              {pet.color && (
+                <div>
+                  <span className="text-sm text-gray-500">Màu sắc:</span>
+                  <p className="font-medium">{pet.color}</p>
                 </div>
               )}
             </div>
@@ -216,23 +314,45 @@ const PetDetail = () => {
               <h3 className="text-lg font-semibold mb-3">
                 Tình trạng sức khỏe
               </h3>
-              <div className="flex flex-wrap gap-2">
-                {pet.healthStatus?.vaccinated && (
-                  <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
-                    ✓ Đã tiêm phòng
-                  </span>
-                )}
-                {pet.healthStatus?.neutered && (
-                  <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
-                    ✓ Đã triệt sản
-                  </span>
-                )}
-                {!pet.healthStatus?.vaccinated &&
-                  !pet.healthStatus?.neutered && (
-                    <span className="text-gray-500 text-sm">
-                      Chưa có thông tin
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="flex items-center">
+                    <span
+                      className={`w-3 h-3 rounded-full mr-2 ${
+                        pet.healthStatus?.vaccinated
+                          ? "bg-green-500"
+                          : "bg-red-500"
+                      }`}
+                    ></span>
+                    <span>
+                      {pet.healthStatus?.vaccinated
+                        ? "Đã tiêm phòng"
+                        : "Chưa tiêm phòng"}
                     </span>
+                  </div>
+                  <div className="flex items-center">
+                    <span
+                      className={`w-3 h-3 rounded-full mr-2 ${
+                        pet.healthStatus?.neutered
+                          ? "bg-green-500"
+                          : "bg-red-500"
+                      }`}
+                    ></span>
+                    <span>
+                      {pet.healthStatus?.neutered
+                        ? "Đã triệt sản"
+                        : "Chưa triệt sản"}
+                    </span>
+                  </div>
+                  {pet.healthStatus?.medicalHistory && (
+                    <div className="mt-3 col-span-2">
+                      <span className="font-medium">Lịch sử y tế:</span>
+                      <p className="text-gray-700 mt-1">
+                        {pet.healthStatus.medicalHistory}
+                      </p>
+                    </div>
                   )}
+                </div>
               </div>
             </div>
 
@@ -294,7 +414,7 @@ const PetDetail = () => {
               <h3 className="text-lg font-semibold mb-3">
                 Thông tin người bán
               </h3>
-              <div className="flex items-center">
+              <div className="flex items-center bg-gray-50 p-4 rounded-lg">
                 <img
                   src={
                     pet.owner?.avatar || "/placeholder.svg?height=40&width=40"
@@ -309,6 +429,7 @@ const PetDetail = () => {
                       ? "Cửa hàng thú cưng"
                       : "Trung tâm cứu hộ"}
                   </p>
+                  <p className="text-sm text-gray-500">{pet.owner?.email}</p>
                 </div>
               </div>
             </div>
@@ -316,12 +437,23 @@ const PetDetail = () => {
             {/* Action Buttons */}
             <div className="space-y-3">
               {pet.isForAdoption ? (
-                <button
-                  onClick={handleAdoptRequest}
-                  className="w-full bg-green-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-green-700 transition-colors"
-                >
-                  Đăng ký nhận nuôi
-                </button>
+                canAdopt() ? (
+                  <button
+                    onClick={handleAdoptRequest}
+                    className="w-full bg-green-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-green-700 transition-colors"
+                  >
+                    Gửi đơn xin nhận nuôi
+                  </button>
+                ) : (
+                  !isAuthenticated && (
+                    <button
+                      onClick={() => navigate("/login")}
+                      className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                    >
+                      Đăng nhập để nhận nuôi
+                    </button>
+                  )
+                )
               ) : (
                 <button
                   onClick={handleContactOwner}
@@ -329,6 +461,14 @@ const PetDetail = () => {
                 >
                   Liên hệ mua
                 </button>
+              )}
+
+              {pet.status !== "available" && pet.isForAdoption && (
+                <div className="w-full bg-gray-300 text-gray-600 py-3 px-6 rounded-lg font-semibold text-center">
+                  {pet.status === "adopted"
+                    ? "Thú cưng đã được nhận nuôi"
+                    : "Đang chờ xử lý nhận nuôi"}
+                </div>
               )}
 
               <button
@@ -340,6 +480,11 @@ const PetDetail = () => {
             </div>
           </div>
         </div>
+
+        {/* Adoption Form Modal */}
+        {showAdoptionForm && (
+          <AdoptionForm pet={pet} onClose={() => setShowAdoptionForm(false)} />
+        )}
       </div>
     </div>
   );

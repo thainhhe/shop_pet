@@ -1,5 +1,3 @@
-"use client";
-
 import { createContext, useContext, useReducer, useEffect } from "react";
 import { authAPI } from "../services/api";
 
@@ -58,7 +56,7 @@ const authReducer = (state, action) => {
   }
 };
 
-export const AuthProvider = ({ children }) => {
+export function AuthProvider({ children }) {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
   // Check if user is logged in on app start
@@ -151,12 +149,13 @@ export const AuthProvider = ({ children }) => {
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
+}
 
-export const useAuth = () => {
+// Sửa cách export hook để tương thích với Fast Refresh
+export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
-};
+}

@@ -92,6 +92,21 @@ export const orderAPI = {
     api.put(`/orders/cancel/${id}`, { cancelReason }),
 };
 
+// Adoption API
+export const adoptionAPI = {
+  submitApplication: (petId, applicationData) =>
+    api.post(`/adoptions/apply/${petId}`, applicationData),
+  getMyApplications: (params) =>
+    api.get("/adoptions/my-applications", { params }),
+  getAdoptionRequests: (params) => api.get("/adoptions/requests", { params }),
+  getAdoptionById: (id) => api.get(`/adoptions/${id}`),
+  updateAdoptionStatus: (id, status, notes) =>
+    api.put(`/adoptions/${id}/status`, { status, notes }),
+  scheduleMeeting: (id, date, location) =>
+    api.put(`/adoptions/${id}/schedule-meeting`, { date, location }),
+  cancelApplication: (id) => api.delete(`/adoptions/${id}`),
+};
+
 // Add Upload API after Order API
 export const uploadAPI = {
   uploadSingle: (file) => {

@@ -136,8 +136,14 @@ router.post(
   ],
   async (req, res) => {
     try {
+      console.log("=== CREATE PET DEBUG ===");
+      console.log("Request body:", req.body);
+      console.log("User role:", req.user.role);
+      console.log("Files:", req.files?.length || 0);
+
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
+        console.log("Validation errors:", errors.array());
         return res.status(400).json({ errors: errors.array() });
       }
 
@@ -151,21 +157,58 @@ router.post(
       // Parse JSON fields that come as strings from FormData
       let petData = { ...req.body };
 
-      // Parse nested objects
-      if (typeof petData.age === "string") {
-        petData.age = JSON.parse(petData.age);
-      }
-      if (typeof petData.healthStatus === "string") {
-        petData.healthStatus = JSON.parse(petData.healthStatus);
-      }
-      if (typeof petData.location === "string") {
-        petData.location = JSON.parse(petData.location);
-      }
-      if (typeof petData.adoptionRequirements === "string") {
-        petData.adoptionRequirements = JSON.parse(petData.adoptionRequirements);
-      }
-      if (typeof petData.personality === "string") {
-        petData.personality = JSON.parse(petData.personality);
+      console.log("Processing form data...");
+
+      // Parse nested objects - handle potential JSON parsing errors
+      try {
+        if (typeof petData.age === "string") {
+          try {
+            petData.age = JSON.parse(petData.age);
+          } catch (e) {
+            console.log("Error parsing age:", e);
+            petData.age = { value: 0, unit: "months" };
+          }
+        }
+
+        if (typeof petData.healthStatus === "string") {
+          try {
+            petData.healthStatus = JSON.parse(petData.healthStatus);
+          } catch (e) {
+            console.log("Error parsing healthStatus:", e);
+            petData.healthStatus = { vaccinated: false, neutered: false };
+          }
+        }
+
+        if (typeof petData.location === "string") {
+          try {
+            petData.location = JSON.parse(petData.location);
+          } catch (e) {
+            console.log("Error parsing location:", e);
+            petData.location = { city: "", district: "" };
+          }
+        }
+
+        if (typeof petData.adoptionRequirements === "string") {
+          try {
+            petData.adoptionRequirements = JSON.parse(
+              petData.adoptionRequirements
+            );
+          } catch (e) {
+            console.log("Error parsing adoptionRequirements:", e);
+            petData.adoptionRequirements = {};
+          }
+        }
+
+        if (typeof petData.personality === "string") {
+          try {
+            petData.personality = JSON.parse(petData.personality);
+          } catch (e) {
+            console.log("Error parsing personality:", e);
+            petData.personality = [];
+          }
+        }
+      } catch (e) {
+        console.log("Error during JSON parsing:", e);
       }
 
       // Handle uploaded images
@@ -176,12 +219,32 @@ router.post(
           }))
         : [];
 
+      // Auto-set transaction type based on user role
+      const isShopOwner = req.user.role === "shop_owner";
+      const isRescueCenter = req.user.role === "rescue_center";
+
+      // Convert string boolean values to actual booleans
+      const isForSale = isShopOwner ? true : false;
+      const isForAdoption = isRescueCenter ? true : false;
+
+      // Parse price to ensure it's a number
+      let price = 0;
+      if (isShopOwner) {
+        price = Number.parseFloat(petData.price) || 0;
+      }
+
       petData = {
         ...petData,
         owner: req.user.userId,
-        ownerType: req.user.role === "shop_owner" ? "shop" : "rescue_center",
+        ownerType: isShopOwner ? "shop" : "rescue_center",
         images: images,
+        isForSale: isForSale,
+        isForAdoption: isForAdoption,
+        price: price,
+        status: "available",
       };
+
+      console.log("Final pet data:", petData);
 
       const pet = new Pet(petData);
       await pet.save();
@@ -197,7 +260,9 @@ router.post(
       });
     } catch (error) {
       console.error("Create pet error:", error);
-      res.status(500).json({ message: "Server error while creating pet" });
+      res
+        .status(500)
+        .json({ message: "Server error while creating pet: " + error.message });
     }
   }
 );

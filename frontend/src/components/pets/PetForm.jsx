@@ -32,9 +32,9 @@ const PetForm = ({ isEdit = false }) => {
       healthCertificate: "",
       medicalHistory: "",
     },
-    price: "",
-    isForAdoption: false,
-    isForSale: true,
+    price: user?.role === "rescue_center" ? "0" : "",
+    isForAdoption: user?.role === "rescue_center",
+    isForSale: user?.role === "shop_owner",
     location: {
       city: "",
       district: "",
@@ -154,6 +154,30 @@ const PetForm = ({ isEdit = false }) => {
         localStorage.getItem("token") ? "exists" : "missing"
       );
 
+      // Kiểm tra dữ liệu đầu vào
+      if (!formData.name || !formData.breed || !formData.description) {
+        setError("Vui lòng điền đầy đủ các trường bắt buộc: tên, giống, mô tả");
+        setLoading(false);
+        return;
+      }
+      if (
+        user?.role === "shop_owner" &&
+        (!formData.price || isNaN(formData.price))
+      ) {
+        setError("Vui lòng nhập giá bán hợp lệ");
+        setLoading(false);
+        return;
+      }
+
+      // Kiểm tra token
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setError("Vui lòng đăng nhập lại");
+        setLoading(false);
+        navigate("/login");
+        return;
+      }
+
       // Prepare form data for submission
       const submitData = new FormData();
 
@@ -165,11 +189,16 @@ const PetForm = ({ isEdit = false }) => {
       submitData.append("size", formData.size);
       submitData.append("color", formData.color || "");
       submitData.append("description", formData.description);
-      submitData.append("isForAdoption", formData.isForAdoption);
-      submitData.append("isForSale", formData.isForSale);
 
-      // Add price
-      const price = formData.isForAdoption ? 0 : Number(formData.price);
+      // Auto-set transaction type based on user role
+      const isShopOwner = user?.role === "shop_owner";
+      const isRescueCenter = user?.role === "rescue_center";
+
+      submitData.append("isForSale", isShopOwner ? "true" : "false");
+      submitData.append("isForAdoption", isRescueCenter ? "true" : "false");
+
+      // Add price (0 for rescue centers, actual price for shops)
+      const price = isRescueCenter ? 0 : Number(formData.price) || 0;
       submitData.append("price", price);
 
       // Add weight if provided
@@ -190,7 +219,8 @@ const PetForm = ({ isEdit = false }) => {
       submitData.append("location", JSON.stringify(formData.location));
       submitData.append("personality", JSON.stringify(formData.personality));
 
-      if (formData.isForAdoption) {
+      // Add adoption requirements only for rescue centers
+      if (isRescueCenter) {
         submitData.append(
           "adoptionRequirements",
           JSON.stringify({
@@ -209,61 +239,26 @@ const PetForm = ({ isEdit = false }) => {
         });
       }
 
-      console.log("FormData prepared, submitting...");
+      console.log("FormData entries:", [...submitData.entries()]);
 
       let response;
       if (isEdit) {
-        // For edit, we'll use the existing API but need to handle FormData
-        response = await fetch(
-          `${
-            import.meta.env.VITE_API_URL || "http://localhost:5000/api"
-          }/pets/${id}`,
-          {
-            method: "PUT",
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-            body: submitData,
-          }
-        );
-
-        console.log("Response status:", response.status);
-        console.log("Response ok:", response.ok);
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          console.log("Error response:", errorData);
-          throw new Error(errorData.message || "Failed to update pet");
-        }
-
-        response = await response.json();
+        // For edit, use petsAPI.updatePetWithImages
+        response = await petsAPI.updatePetWithImages(id, submitData);
       } else {
-        // For create, use fetch with FormData
-        response = await fetch(
-          `${import.meta.env.VITE_API_URL || "http://localhost:5000/api"}/pets`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-            body: submitData,
-          }
-        );
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          console.log("Error response:", errorData);
-          throw new Error(errorData.message || "Failed to create pet");
-        }
-
-        response = await response.json();
+        // For create, use petsAPI.createPetWithImages
+        response = await petsAPI.createPetWithImages(submitData);
       }
 
-      console.log("Success response:", response);
+      console.log("Success response:", response.data);
       navigate("/dashboard");
     } catch (err) {
       console.error("Submit error:", err);
-      setError(err.message || "Có lỗi xảy ra khi lưu thông tin thú cưng");
+      const errorMessage =
+        err.response?.data?.errors?.[0]?.msg ||
+        err.response?.data?.message ||
+        "Có lỗi xảy ra khi lưu thông tin thú cưng";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -572,64 +567,78 @@ const PetForm = ({ isEdit = false }) => {
             <h2 className="text-xl font-semibold mb-4">
               Giá và loại giao dịch
             </h2>
-            <div className="space-y-4">
-              <div className="flex items-center space-x-6">
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="transactionType"
-                    value="sale"
-                    checked={!formData.isForAdoption}
-                    onChange={() =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        isForAdoption: false,
-                        isForSale: true,
-                      }))
-                    }
-                    className="mr-2"
-                  />
-                  <span className="text-sm font-medium text-gray-700">Bán</span>
-                </label>
 
-                <label className="flex items-center">
-                  <input
-                    type="radio"
-                    name="transactionType"
-                    value="adoption"
-                    checked={formData.isForAdoption}
-                    onChange={() =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        isForAdoption: true,
-                        isForSale: false,
-                      }))
-                    }
-                    className="mr-2"
-                  />
-                  <span className="text-sm font-medium text-gray-700">
-                    Nhận nuôi
+            {/* Display transaction type based on user role */}
+            <div className="mb-4 p-4 bg-gray-50 rounded-md">
+              {user?.role === "shop_owner" ? (
+                <div className="flex items-center text-blue-600">
+                  <svg
+                    className="w-5 h-5 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
+                    />
+                  </svg>
+                  <span className="font-medium">
+                    Cửa hàng - Thú cưng để bán
                   </span>
-                </label>
-              </div>
-
-              {!formData.isForAdoption && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Giá bán (VNĐ) *
-                  </label>
-                  <input
-                    type="number"
-                    name="price"
-                    value={formData.price}
-                    onChange={handleChange}
-                    required={!formData.isForAdoption}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Nhập giá bán"
-                  />
+                </div>
+              ) : (
+                <div className="flex items-center text-green-600">
+                  <svg
+                    className="w-5 h-5 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                    />
+                  </svg>
+                  <span className="font-medium">
+                    Trung tâm cứu hộ - Thú cưng để nhận nuôi
+                  </span>
                 </div>
               )}
             </div>
+
+            {/* Price input only for shop owners */}
+            {user?.role === "shop_owner" && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Giá bán (VNĐ) *
+                </label>
+                <input
+                  type="number"
+                  name="price"
+                  value={formData.price}
+                  onChange={handleChange}
+                  required
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Nhập giá bán"
+                />
+              </div>
+            )}
+
+            {/* Info for rescue centers */}
+            {user?.role === "rescue_center" && (
+              <div className="text-sm text-gray-600">
+                <p>
+                  💡 Thú cưng từ trung tâm cứu hộ sẽ được đăng miễn phí để nhận
+                  nuôi.
+                </p>
+                <p>Bạn có thể thiết lập yêu cầu nhận nuôi ở phần dưới.</p>
+              </div>
+            )}
           </div>
 
           {/* Location */}
@@ -667,7 +676,7 @@ const PetForm = ({ isEdit = false }) => {
           </div>
 
           {/* Adoption Requirements (only for adoption) */}
-          {formData.isForAdoption && (
+          {user?.role === "rescue_center" && (
             <div className="bg-white p-6 rounded-lg shadow-md">
               <h2 className="text-xl font-semibold mb-4">Yêu cầu nhận nuôi</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
