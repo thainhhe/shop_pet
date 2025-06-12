@@ -10,35 +10,33 @@ const router = express.Router();
 // Get user's cart
 router.get("/", auth, async (req, res) => {
   try {
-    let cart = await Cart.findOne({ user: req.user.userId }).populate({
-      path: "items.item",
-      select: "name price images inventory isActive status",
-    });
+    let cart = await Cart.findOne({ user: req.user.userId });
 
     if (!cart) {
       cart = new Cart({ user: req.user.userId, items: [] });
       await cart.save();
     }
 
-    // Filter out inactive products or out of stock
-    // cart.items = cart.items.filter((item) => {
-    //   if (item.itemType === "product") {
-    //     return (
-    //       item.item &&
-    //       item.item.isActive &&
-    //       item.item.inventory.quantity > 0
-    //     );
-    //   } else if (item.itemType === "pet") {
-    //     return (
-    //       item.item &&
-    //       item.item.status === "available"
-    //     );
-    //   }
-    //   return false;
-    // });
+    // Populate items separately based on itemType
+    const populatedItems = await Promise.all(
+      cart.items.map(async (item) => {
+        try {
+          const Model = item.itemType === "pet" ? Pet : Product;
+          const populatedItem = await Model.findById(item.item)
+            .select("name price images inventory isActive status");
+          
+          return {
+            ...item.toObject(),
+            item: populatedItem
+          };
+        } catch (err) {
+          console.error(`Error populating item ${item._id}:`, err);
+          return item;
+        }
+      })
+    );
 
-    await cart.save();
-
+    cart.items = populatedItems;
     res.json({ cart });
   } catch (error) {
     console.error("Get cart error:", error);

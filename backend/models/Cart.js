@@ -52,6 +52,7 @@ const cartSchema = new mongoose.Schema(
 
 // Calculate totals before saving
 cartSchema.pre("save", function (next) {
+  console.log('Saving cart with items:', this.items);
   this.totalItems = this.items.reduce(
     (total, item) => total + item.quantity,
     0

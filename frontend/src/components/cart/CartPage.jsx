@@ -29,6 +29,8 @@ const CartPage = () => {
   };
 
   const getItemImage = (item) => {
+
+
     if (item.itemType === "product") {
       return item.item.images?.[0]?.url || "/placeholder.svg?height=80&width=80";
     } else if (item.itemType === "pet") {

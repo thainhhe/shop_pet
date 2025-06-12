@@ -51,6 +51,7 @@ export function CartProvider({ children }) {
       const response = await cartAPI.getCart();
       dispatch({ type: "CART_SUCCESS", payload: response.data.cart });
     } catch (error) {
+      console.error('Cart fetch error:', error);
       dispatch({
         type: "CART_ERROR",
         payload: error.response?.data?.message || "Failed to fetch cart",
