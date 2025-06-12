@@ -11,6 +11,7 @@ import PetManagement from "./components/pets/PetManagement";
 import ProductList from "./components/products/ProductList";
 import Dashboard from "./pages/Dashboard";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+
 // Thêm import Footer
 import Footer from "./components/layout/Footer";
 
@@ -36,6 +37,7 @@ function App() {
                 <Route path="/pets" element={<PetList />} />
                 <Route path="/pets/:id" element={<PetDetail />} />
                 <Route path="/products" element={<ProductList />} />
+
 
                 {/* Add new cart route */}
                 <Route

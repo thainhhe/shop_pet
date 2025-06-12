@@ -1,9 +1,14 @@
 const mongoose = require("mongoose");
 
 const cartItemSchema = new mongoose.Schema({
-  product: {
+  itemType: {
+    type: String,
+    enum: ["product", "pet"],
+    required: true,
+  },
+  item: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Product",
+    refPath: 'itemType',
     required: true,
   },
   quantity: {

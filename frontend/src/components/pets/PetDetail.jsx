@@ -6,6 +6,7 @@ import { petsAPI } from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
 import LoadingSpinner from "../common/LoadingSpinner";
 import AdoptionForm from "../adoption/AdoptionForm";
+import { useCart } from "../../contexts/CartContext";
 
 const PetDetail = () => {
   const { id } = useParams();
@@ -16,6 +17,8 @@ const PetDetail = () => {
   const [error, setError] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showAdoptionForm, setShowAdoptionForm] = useState(false);
+
+  const { addToCart } = useCart();
 
   useEffect(() => {
     fetchPetDetail();
@@ -111,6 +114,25 @@ const PetDetail = () => {
       return;
     }
     alert("Tính năng liên hệ sẽ được triển khai sau!");
+  };
+
+  const handleAddToCart = async () => {
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+
+    try {
+      const result = await addToCart(pet._id, 1, "pet");
+      if (result.success) {
+        alert("Đã thêm vào giỏ hàng thành công!");
+      } else {
+        alert(result.error || "Không thể thêm vào giỏ hàng. Vui lòng thử lại!");
+      }
+    } catch (error) {
+      console.error("Add to cart error:", error);
+      alert("lỗi Không thể thêm vào giỏ hàng. Vui lòng thử lại!");
+    }
   };
 
   const handleAdoptRequest = () => {
@@ -232,11 +254,10 @@ const PetDetail = () => {
                 <button
                   key={index}
                   onClick={() => setCurrentImageIndex(index)}
-                  className={`flex-shrink-0 w-20 h-20 rounded-md overflow-hidden border-2 ${
-                    index === currentImageIndex
-                      ? "border-blue-500"
-                      : "border-gray-200"
-                  }`}
+                  className={`flex-shrink-0 w-20 h-20 rounded-md overflow-hidden border-2 ${index === currentImageIndex
+                    ? "border-blue-500"
+                    : "border-gray-200"
+                    }`}
                 >
                   <img
                     src={image.url || "/placeholder.svg"}
@@ -318,11 +339,10 @@ const PetDetail = () => {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div className="flex items-center">
                     <span
-                      className={`w-3 h-3 rounded-full mr-2 ${
-                        pet.healthStatus?.vaccinated
-                          ? "bg-green-500"
-                          : "bg-red-500"
-                      }`}
+                      className={`w-3 h-3 rounded-full mr-2 ${pet.healthStatus?.vaccinated
+                        ? "bg-green-500"
+                        : "bg-red-500"
+                        }`}
                     ></span>
                     <span>
                       {pet.healthStatus?.vaccinated
@@ -332,11 +352,10 @@ const PetDetail = () => {
                   </div>
                   <div className="flex items-center">
                     <span
-                      className={`w-3 h-3 rounded-full mr-2 ${
-                        pet.healthStatus?.neutered
-                          ? "bg-green-500"
-                          : "bg-red-500"
-                      }`}
+                      className={`w-3 h-3 rounded-full mr-2 ${pet.healthStatus?.neutered
+                        ? "bg-green-500"
+                        : "bg-red-500"
+                        }`}
                     ></span>
                     <span>
                       {pet.healthStatus?.neutered
@@ -455,12 +474,20 @@ const PetDetail = () => {
                   )
                 )
               ) : (
-                <button
-                  onClick={handleContactOwner}
-                  className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-                >
-                  Liên hệ mua
-                </button>
+                <div className="flex gap-4">
+                  <button
+                    onClick={handleAddToCart}
+                    className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                  >
+                    Thêm vào giỏ hàng
+                  </button>
+                  <button
+                    onClick={handleContactOwner}
+                    className="flex-1 bg-green-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-green-700 transition-colors"
+                  >
+                    Mua ngay
+                  </button>
+                </div>
               )}
 
               {pet.status !== "available" && pet.isForAdoption && (

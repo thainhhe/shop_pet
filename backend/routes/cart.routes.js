@@ -2,6 +2,7 @@ const express = require("express");
 const { body, validationResult } = require("express-validator");
 const Cart = require("../models/Cart");
 const Product = require("../models/Product");
+const Pet = require("../models/Pet");
 const auth = require("../middleware/auth");
 
 const router = express.Router();
@@ -10,8 +11,8 @@ const router = express.Router();
 router.get("/", auth, async (req, res) => {
   try {
     let cart = await Cart.findOne({ user: req.user.userId }).populate({
-      path: "items.product",
-      select: "name price images inventory isActive",
+      path: "items.item",
+      select: "name price images inventory isActive status",
     });
 
     if (!cart) {
@@ -20,12 +21,21 @@ router.get("/", auth, async (req, res) => {
     }
 
     // Filter out inactive products or out of stock
-    cart.items = cart.items.filter(
-      (item) =>
-        item.product &&
-        item.product.isActive &&
-        item.product.inventory.quantity > 0
-    );
+    cart.items = cart.items.filter((item) => {
+      if (item.itemType === "product") {
+        return (
+          item.item &&
+          item.item.isActive &&
+          item.item.inventory.quantity > 0
+        );
+      } else if (item.itemType === "pet") {
+        return (
+          item.item &&
+          item.item.status === "available"
+        );
+      }
+      return false;
+    });
 
     await cart.save();
 
@@ -41,7 +51,8 @@ router.post(
   "/add",
   auth,
   [
-    body("productId").isMongoId().withMessage("Invalid product ID"),
+    body("itemType").isIn(["product", "pet"]).withMessage("Invalid item type"),
+    body("itemId").isMongoId().withMessage("Invalid item ID"),
     body("quantity")
       .isInt({ min: 1 })
       .withMessage("Quantity must be at least 1"),
@@ -53,18 +64,30 @@ router.post(
         return res.status(400).json({ errors: errors.array() });
       }
 
-      const { productId, quantity } = req.body;
+      const { itemType, itemId, quantity } = req.body;
 
-      // Check if product exists and is available
-      const product = await Product.findById(productId);
-      if (!product || !product.isActive) {
-        return res
-          .status(404)
-          .json({ message: "Product not found or unavailable" });
-      }
-
-      if (product.inventory.quantity < quantity) {
-        return res.status(400).json({ message: "Not enough stock available" });
+      // Check if item exists and is available
+      let item;
+      if (itemType === "product") {
+        item = await Product.findById(itemId);
+        if (!item || !item.isActive) {
+          return res
+            .status(404)
+            .json({ message: "Product not found or unavailable" });
+        }
+        if (item.inventory.quantity < quantity) {
+          return res.status(400).json({ message: "Not enough stock available" });
+        }
+      } else if (itemType === "pet") {
+        item = await Pet.findById(itemId);
+        if (!item || item.status !== "available") {
+          return res
+            .status(404)
+            .json({ message: "Pet not found or unavailable" });
+        }
+        if (quantity > 1) {
+          return res.status(400).json({ message: "Can only add one pet at a time" });
+        }
       }
 
       let cart = await Cart.findOne({ user: req.user.userId });
@@ -74,31 +97,36 @@ router.post(
 
       // Check if item already exists in cart
       const existingItemIndex = cart.items.findIndex(
-        (item) => item.product.toString() === productId
+        (item) => item.item.toString() === itemId && item.itemType === itemType
       );
 
       if (existingItemIndex > -1) {
         // Update quantity
-        const newQuantity = cart.items[existingItemIndex].quantity + quantity;
-        if (newQuantity > product.inventory.quantity) {
-          return res
-            .status(400)
-            .json({ message: "Not enough stock available" });
+        if (itemType === "product") {
+          const newQuantity = cart.items[existingItemIndex].quantity + quantity;
+          if (newQuantity > item.inventory.quantity) {
+            return res
+              .status(400)
+              .json({ message: "Not enough stock available" });
+          }
+          cart.items[existingItemIndex].quantity = newQuantity;
+        } else {
+          return res.status(400).json({ message: "Pet is already in cart" });
         }
-        cart.items[existingItemIndex].quantity = newQuantity;
       } else {
         // Add new item
         cart.items.push({
-          product: productId,
+          itemType,
+          item: itemId,
           quantity,
-          price: product.price,
+          price: item.price,
         });
       }
 
       await cart.save();
       await cart.populate({
-        path: "items.product",
-        select: "name price images inventory isActive",
+        path: "items.item",
+        select: "name price images inventory isActive status",
       });
 
       res.json({
@@ -148,7 +176,7 @@ router.put(
         cart.items.splice(itemIndex, 1);
       } else {
         // Check stock availability
-        const product = await Product.findById(cart.items[itemIndex].product);
+        const product = await Product.findById(cart.items[itemIndex].item);
         if (quantity > product.inventory.quantity) {
           return res
             .status(400)
@@ -159,8 +187,8 @@ router.put(
 
       await cart.save();
       await cart.populate({
-        path: "items.product",
-        select: "name price images inventory isActive",
+        path: "items.item",
+        select: "name price images inventory isActive status",
       });
 
       res.json({
@@ -188,8 +216,8 @@ router.delete("/remove/:itemId", auth, async (req, res) => {
     await cart.save();
 
     await cart.populate({
-      path: "items.product",
-      select: "name price images inventory isActive",
+      path: "items.item",
+      select: "name price images inventory isActive status",
     });
 
     res.json({

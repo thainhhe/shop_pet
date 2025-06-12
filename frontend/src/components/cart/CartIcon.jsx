@@ -14,6 +14,19 @@ const CartIcon = () => {
 
   const itemCount = cart?.totalItems || 0;
 
+  const getItemImage = (item) => {
+    if (item.itemType === "product") {
+      return item.item.images?.[0]?.url || "/placeholder.svg?height=40&width=40";
+    } else if (item.itemType === "pet") {
+      return item.item.images?.[0]?.url || "/placeholder.svg?height=40&width=40";
+    }
+    return "/placeholder.svg?height=40&width=40";
+  };
+
+  const getItemName = (item) => {
+    return item.item.name;
+  };
+
   return (
     <div className="relative">
       <button
@@ -79,16 +92,13 @@ const CartIcon = () => {
                       className="flex items-center space-x-3 py-2"
                     >
                       <img
-                        src={
-                          item.product.images?.[0]?.url ||
-                          "/placeholder.svg?height=40&width=40"
-                        }
-                        alt={item.product.name}
+                        src={getItemImage(item)}
+                        alt={getItemName(item)}
                         className="w-10 h-10 object-cover rounded"
                       />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-900 truncate">
-                          {item.product.name}
+                          {getItemName(item)}
                         </p>
                         <p className="text-sm text-gray-500">
                           {item.quantity} x{" "}

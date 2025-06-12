@@ -75,8 +75,8 @@ export const productsAPI = {
 // Add Cart API after Products API
 export const cartAPI = {
   getCart: () => api.get("/cart"),
-  addToCart: (productId, quantity) =>
-    api.post("/cart/add", { productId, quantity }),
+  addToCart: (itemId, quantity, itemType) =>
+    api.post("/cart/add", { itemId, quantity, itemType }),
   updateCartItem: (itemId, quantity) =>
     api.put(`/cart/update/${itemId}`, { quantity }),
   removeFromCart: (itemId) => api.delete(`/cart/remove/${itemId}`),

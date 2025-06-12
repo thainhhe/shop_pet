@@ -27,6 +27,26 @@ const CartPage = () => {
     }).format(price);
   };
 
+  const getItemImage = (item) => {
+    if (item.itemType === "product") {
+      return item.item.images?.[0]?.url || "/placeholder.svg?height=80&width=80";
+    } else if (item.itemType === "pet") {
+      return item.item.images?.[0]?.url || "/placeholder.svg?height=80&width=80";
+    }
+    return "/placeholder.svg?height=80&width=80";
+  };
+
+  const getItemName = (item) => {
+    return item.item.name;
+  };
+
+  const getItemInventory = (item) => {
+    if (item.itemType === "product") {
+      return item.item.inventory?.quantity || 0;
+    }
+    return 1; // For pets, always return 1 as they can't be added more than once
+  };
+
   const handleQuantityChange = async (itemId, newQuantity) => {
     if (newQuantity < 1) return;
     await updateCartItem(itemId, newQuantity);
@@ -91,56 +111,59 @@ const CartPage = () => {
                     <div key={item._id} className="p-6">
                       <div className="flex items-center space-x-4">
                         <img
-                          src={
-                            item.product.images?.[0]?.url ||
-                            "/placeholder.svg?height=80&width=80"
-                          }
-                          alt={item.product.name}
+                          src={getItemImage(item)}
+                          alt={getItemName(item)}
                           className="w-20 h-20 object-cover rounded-md"
                         />
                         <div className="flex-1 min-w-0">
                           <h3 className="text-lg font-medium text-gray-900 truncate">
-                            {item.product.name}
+                            {getItemName(item)}
                           </h3>
-                          <p className="text-sm text-gray-500">
-                            Còn lại: {item.product.inventory.quantity} sản phẩm
-                          </p>
+                          {item.itemType === "product" && (
+                            <p className="text-sm text-gray-500">
+                              Còn lại: {getItemInventory(item)} sản phẩm
+                            </p>
+                          )}
                           <p className="text-lg font-semibold text-blue-600 mt-1">
                             {formatPrice(item.price)}
                           </p>
                         </div>
                         <div className="flex items-center space-x-3">
-                          <div className="flex items-center border border-gray-300 rounded-md">
-                            <button
-                              onClick={() =>
-                                handleQuantityChange(
-                                  item._id,
-                                  item.quantity - 1
-                                )
-                              }
-                              disabled={item.quantity <= 1}
-                              className="px-3 py-1 text-gray-600 hover:text-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              -
-                            </button>
-                            <span className="px-4 py-1 border-x border-gray-300">
-                              {item.quantity}
-                            </span>
-                            <button
-                              onClick={() =>
-                                handleQuantityChange(
-                                  item._id,
-                                  item.quantity + 1
-                                )
-                              }
-                              disabled={
-                                item.quantity >= item.product.inventory.quantity
-                              }
-                              className="px-3 py-1 text-gray-600 hover:text-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              +
-                            </button>
-                          </div>
+                          {item.itemType === "product" ? (
+                            <div className="flex items-center border border-gray-300 rounded-md">
+                              <button
+                                onClick={() =>
+                                  handleQuantityChange(
+                                    item._id,
+                                    item.quantity - 1
+                                  )
+                                }
+                                disabled={item.quantity <= 1}
+                                className="px-3 py-1 text-gray-600 hover:text-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                -
+                              </button>
+                              <span className="px-4 py-1 border-x border-gray-300">
+                                {item.quantity}
+                              </span>
+                              <button
+                                onClick={() =>
+                                  handleQuantityChange(
+                                    item._id,
+                                    item.quantity + 1
+                                  )
+                                }
+                                disabled={
+                                  item.quantity >= getItemInventory(item)
+                                }
+                                className="px-3 py-1 text-gray-600 hover:text-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                +
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-sm text-gray-500">Số lượng: 1</span>
+                          )}
                           <button
                             onClick={() => handleRemoveItem(item._id)}
                             className="text-red-600 hover:text-red-800 p-1"

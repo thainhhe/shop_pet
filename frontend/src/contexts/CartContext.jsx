@@ -66,10 +66,10 @@ export function CartProvider({ children }) {
     }
   };
 
-  const addToCart = async (productId, quantity = 1) => {
+  const addToCart = async (itemId, quantity = 1, itemType) => {
     try {
       dispatch({ type: "CART_START" });
-      const response = await cartAPI.addToCart(productId, quantity);
+      const response = await cartAPI.addToCart(itemId, quantity, itemType);
       dispatch({ type: "CART_SUCCESS", payload: response.data.cart });
       return { success: true };
     } catch (error) {

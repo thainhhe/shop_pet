@@ -23,6 +23,7 @@ app.use("/api/orders", require("./routes/order.routes"));
 app.use("/api/upload", require("./routes/upload.routes"));
 app.use("/api/adoptions", require("./routes/adoption.routes"));
 
+
 // Connect to MongoDB
 mongoose
   .connect(process.env.MONGODB_URI)
