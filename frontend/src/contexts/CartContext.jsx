@@ -1,4 +1,4 @@
-import { createContext, useContext, useReducer, useEffect } from "react";
+import { createContext, useContext, useReducer, useEffect, useCallback } from "react";
 import { cartAPI } from "../services/api";
 import { useAuth } from "./AuthContext";
 
@@ -45,15 +45,7 @@ export function CartProvider({ children }) {
   const [state, dispatch] = useReducer(cartReducer, initialState);
   const { isAuthenticated } = useAuth();
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchCart();
-    } else {
-      dispatch({ type: "CLEAR_CART" });
-    }
-  }, [isAuthenticated]);
-
-  const fetchCart = async () => {
+  const fetchCart = useCallback(async () => {
     try {
       dispatch({ type: "CART_START" });
       const response = await cartAPI.getCart();
@@ -64,14 +56,27 @@ export function CartProvider({ children }) {
         payload: error.response?.data?.message || "Failed to fetch cart",
       });
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchCart();
+    } else {
+      dispatch({ type: "CLEAR_CART" });
+    }
+  }, [isAuthenticated, fetchCart]);
 
   const addToCart = async (itemId, quantity = 1, itemType) => {
     try {
       dispatch({ type: "CART_START" });
       const response = await cartAPI.addToCart(itemId, quantity, itemType);
-      dispatch({ type: "CART_SUCCESS", payload: response.data.cart });
-      return { success: true };
+
+      if (response.data && response.data.cart) {
+        dispatch({ type: "CART_SUCCESS", payload: response.data.cart });
+        return { success: true };
+      } else {
+        throw new Error("Invalid response from server");
+      }
     } catch (error) {
       const message = error.response?.data?.message || "Failed to add to cart";
       dispatch({ type: "CART_ERROR", payload: message });

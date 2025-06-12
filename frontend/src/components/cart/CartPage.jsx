@@ -17,8 +17,9 @@ const CartPage = () => {
       navigate("/login");
       return;
     }
+    // Fetch cart data khi component mount và khi isAuthenticated thay đổi
     fetchCart();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, navigate]);
 
   const formatPrice = (price) => {
     return new Intl.NumberFormat("vi-VN", {

@@ -115,6 +115,12 @@ router.post(
         }
       } else {
         // Add new item
+        console.log('Adding new item to cart:', {
+          itemType,
+          item: itemId,
+          quantity,
+          price: item.price
+        });
         cart.items.push({
           itemType,
           item: itemId,
@@ -123,11 +129,21 @@ router.post(
         });
       }
 
+      console.log('Cart before save:', cart);
       await cart.save();
+      console.log('Cart after save:', cart);
+      
+      // Populate with correct model based on itemType
       await cart.populate({
-        path: "items.item",
-        select: "name price images inventory isActive status",
+        path: 'items.item',
+        select: 'name price images inventory isActive status',
+        options: { lean: true }
       });
+      console.log('Cart after populate:', cart);
+
+      // Ensure cart is saved after population
+      await cart.save();
+      console.log('Cart after final save:', cart);
 
       res.json({
         message: "Item added to cart successfully",
@@ -139,6 +155,10 @@ router.post(
     }
   }
 );
+
+
+
+
 
 // Update cart item quantity
 router.put(
