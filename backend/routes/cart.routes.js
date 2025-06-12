@@ -21,21 +21,21 @@ router.get("/", auth, async (req, res) => {
     }
 
     // Filter out inactive products or out of stock
-    cart.items = cart.items.filter((item) => {
-      if (item.itemType === "product") {
-        return (
-          item.item &&
-          item.item.isActive &&
-          item.item.inventory.quantity > 0
-        );
-      } else if (item.itemType === "pet") {
-        return (
-          item.item &&
-          item.item.status === "available"
-        );
-      }
-      return false;
-    });
+    // cart.items = cart.items.filter((item) => {
+    //   if (item.itemType === "product") {
+    //     return (
+    //       item.item &&
+    //       item.item.isActive &&
+    //       item.item.inventory.quantity > 0
+    //     );
+    //   } else if (item.itemType === "pet") {
+    //     return (
+    //       item.item &&
+    //       item.item.status === "available"
+    //     );
+    //   }
+    //   return false;
+    // });
 
     await cart.save();
 
