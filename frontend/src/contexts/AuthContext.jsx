@@ -4,7 +4,7 @@ import { authAPI } from "../services/api";
 const AuthContext = createContext();
 
 const initialState = {
-  user: null,
+  user: JSON.parse(localStorage.getItem("user")) || null,
   token: localStorage.getItem("token"),
   isAuthenticated: false,
   loading: true,

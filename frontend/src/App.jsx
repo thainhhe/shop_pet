@@ -11,6 +11,7 @@ import PetManagement from "./components/pets/PetManagement";
 import ProductList from "./components/products/ProductList";
 import Dashboard from "./pages/Dashboard";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import ShopDashboard from "./pages/ShopDashboard";
 
 // Thêm import Footer
 import Footer from "./components/layout/Footer";
@@ -30,7 +31,7 @@ function App() {
             <Navbar />
             <main>
               <Routes>
-                {/* Existing routes */}
+                {/* Public routes */}
                 <Route path="/" element={<HomePage />} />
                 <Route path="/login" element={<LoginForm />} />
                 <Route path="/register" element={<RegisterForm />} />
@@ -38,8 +39,25 @@ function App() {
                 <Route path="/pets/:id" element={<PetDetail />} />
                 <Route path="/products" element={<ProductList />} />
 
+                {/* Protected routes */}
+                <Route
+                  path="/shop-dashboard"
+                  element={
+                    <ProtectedRoute requiredRole={["shop_owner"]}>
+                      <ShopDashboard />
+                    </ProtectedRoute>
+                  }
+                />
 
-                {/* Add new cart route */}
+                <Route
+                  path="/admin-dashboard"
+                  element={
+                    <ProtectedRoute requiredRole="admin">
+                      <Dashboard />
+                    </ProtectedRoute>
+                  }
+                />
+
                 <Route
                   path="/cart"
                   element={
@@ -49,37 +67,28 @@ function App() {
                   }
                 />
 
-                {/* Rest of existing routes */}
-                <Route
-                  path="/dashboard"
-                  element={
-                    <ProtectedRoute>
-                      <Dashboard />
-                    </ProtectedRoute>
-                  }
-                />
                 <Route
                   path="/pets/new"
                   element={
-                    <ProtectedRoute
-                      requiredRoles={["shop_owner", "rescue_center"]}
-                    >
+                    <ProtectedRoute requiredRole={["shop_owner"]}>
                       <PetForm />
                     </ProtectedRoute>
                   }
                 />
+
                 <Route
                   path="/pets/:id/edit"
                   element={
-                    <ProtectedRoute requiredRole="shop_owner">
+                    <ProtectedRoute requiredRole={["shop_owner"]}>
                       <PetForm isEdit={true} />
                     </ProtectedRoute>
                   }
                 />
+
                 <Route
                   path="/manage/pets"
                   element={
-                    <ProtectedRoute>
+                    <ProtectedRoute requiredRole={["shop_owner", "admin"]}>
                       <PetManagement />
                     </ProtectedRoute>
                   }

@@ -25,7 +25,23 @@ const LoginForm = () => {
     e.preventDefault();
     const result = await login(formData);
     if (result.success) {
-      navigate("/");
+      // Get user role from the auth context
+      const userData = localStorage.getItem("user");
+      if (result.success && userData) {
+        try {
+          const user = JSON.parse(userData);
+          if (user.role === "shop") {
+            navigate("/shop-dashboard");
+          } else if (user.role === "admin") {
+            navigate("/admin-dashboard");
+          } else {
+            navigate("/");
+          }
+        } catch (e) {
+          console.error("Invalid user data:", e);
+          navigate("/");
+        }
+      }
     }
   };
 
