@@ -213,10 +213,12 @@ router.post(
 
       // Handle uploaded images
       const images = req.files
-        ? req.files.map((file) => ({
-            url: file.path,
-            publicId: file.filename,
-          }))
+        ? req.files.map((file) => {
+            const url = process.env.NODE_ENV === 'production'
+              ? file.path // Cloudinary path
+              : `${req.protocol}://${req.get('host')}/uploads/${file.filename}`; // Local path
+            return { url, publicId: file.filename };
+          })
         : [];
 
       // Auto-set transaction type based on user role
@@ -343,13 +345,27 @@ router.put(
 
       // Handle new uploaded images
       if (req.files && req.files.length > 0) {
-        const newImages = req.files.map((file) => ({
-          url: file.path,
-          publicId: file.filename,
-        }));
-
-        // Add new images to existing ones
+        const newImages = req.files.map((file) => {
+            const url = process.env.NODE_ENV === 'production'
+              ? file.path
+              : `${req.protocol}://${req.get('host')}/uploads/${file.filename}`;
+            return { url, publicId: file.filename };
+          });
         updateData.images = [...(pet.images || []), ...newImages];
+      }
+      
+      // Handle image deletions
+      let imagesToDelete = [];
+      if (req.body.deleteImages) {
+          imagesToDelete = Array.isArray(req.body.deleteImages) ? req.body.deleteImages : [req.body.deleteImages];
+      }
+      
+      // Filter out deleted images from the existing list
+      if (imagesToDelete.length > 0) {
+          const remainingImages = (updateData.images || pet.images).filter(
+            (img) => !imagesToDelete.includes(img.publicId)
+          );
+          updateData.images = remainingImages;
       }
 
       console.log("Update data prepared, updating pet...");
@@ -389,6 +405,11 @@ router.delete("/:id", auth, async (req, res) => {
       return res
         .status(403)
         .json({ message: "Not authorized to delete this pet" });
+    }
+
+    // Check if the pet is available before deleting
+    if (pet.status !== 'available') {
+        return res.status(400).json({ message: "Cannot delete a pet that is not available." });
     }
 
     await Pet.findByIdAndDelete(req.params.id);

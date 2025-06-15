@@ -9,6 +9,7 @@ import PetDetail from "./components/pets/PetDetail";
 import PetForm from "./components/pets/PetForm";
 import PetManagement from "./components/pets/PetManagement";
 import ProductList from "./components/products/ProductList";
+import ProductForm from "./components/products/ProductForm";
 import Dashboard from "./pages/Dashboard";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import ShopDashboard from "./pages/ShopDashboard";
@@ -90,6 +91,24 @@ function App() {
                   element={
                     <ProtectedRoute requiredRole={["shop_owner", "admin"]}>
                       <PetManagement />
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* Product Management Routes */}
+                <Route
+                  path="/products/new"
+                  element={
+                    <ProtectedRoute requiredRole={["shop_owner"]}>
+                      <ProductForm />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/products/:id/edit"
+                  element={
+                    <ProtectedRoute requiredRole={["shop_owner"]}>
+                      <ProductForm isEdit={true} />
                     </ProtectedRoute>
                   }
                 />

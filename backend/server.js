@@ -11,8 +11,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve uploaded files
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+// Serve static files from the 'uploads' directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
 app.use("/api/auth", require("./routes/auth.routes"));
@@ -22,7 +22,10 @@ app.use("/api/cart", require("./routes/cart.routes"));
 app.use("/api/orders", require("./routes/order.routes"));
 app.use("/api/upload", require("./routes/upload.routes"));
 app.use("/api/adoptions", require("./routes/adoption.routes"));
+app.use("/api/shop", require("./routes/shop.routes"));
 
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, "../frontend/dist")));
 
 // Connect to MongoDB
 mongoose

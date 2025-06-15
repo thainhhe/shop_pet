@@ -2,6 +2,7 @@ const express = require("express");
 const { body, query, validationResult } = require("express-validator");
 const Product = require("../models/Product");
 const auth = require("../middleware/auth");
+const { upload } = require("../middleware/upload");
 
 const router = express.Router();
 
@@ -128,6 +129,7 @@ router.get("/:id", async (req, res) => {
 router.post(
   "/",
   auth,
+  upload.array("images", 10),
   [
     body("name")
       .trim()
@@ -166,10 +168,38 @@ router.post(
           .json({ message: "Not authorized to create products" });
       }
 
-      const productData = {
-        ...req.body,
-        shop: req.user.userId,
-      };
+      const productData = { ...req.body };
+
+      // Parse JSON string fields from FormData
+      const fieldsToParse = ['discount', 'specifications', 'petTypes', 'tags'];
+      fieldsToParse.forEach(field => {
+        if (productData[field] && typeof productData[field] === 'string') {
+          try {
+            productData[field] = JSON.parse(productData[field]);
+          } catch(e) {
+            console.error(`Error parsing ${field}:`, e);
+          }
+        }
+      });
+      
+      // Handle inventory separately as it's a nested object but not stringified
+       if (productData['inventory.quantity']) {
+        productData.inventory = { quantity: Number(productData['inventory.quantity']) };
+        delete productData['inventory.quantity'];
+      }
+
+      // Handle uploaded images
+      const images = req.files
+        ? req.files.map((file) => {
+            const url = process.env.NODE_ENV === 'production'
+              ? file.path // Cloudinary path
+              : `${req.protocol}://${req.get('host')}/uploads/${file.filename}`; // Local path
+            return { url, publicId: file.filename };
+          })
+        : [];
+
+      productData.images = images;
+      productData.shop = req.user.userId;
 
       const product = new Product(productData);
       await product.save();
@@ -191,7 +221,7 @@ router.post(
 );
 
 // Update product
-router.put("/:id", auth, async (req, res) => {
+router.put("/:id", auth, upload.array("images", 10), async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
 
@@ -206,9 +236,55 @@ router.put("/:id", auth, async (req, res) => {
         .json({ message: "Not authorized to update this product" });
     }
 
+    const updateData = { ...req.body };
+    
+    // Parse JSON string fields from FormData
+    const fieldsToParse = ['discount', 'specifications', 'petTypes', 'tags'];
+    fieldsToParse.forEach(field => {
+      if (updateData[field] && typeof updateData[field] === 'string') {
+        try {
+          updateData[field] = JSON.parse(updateData[field]);
+        } catch(e) {
+          console.error(`Error parsing ${field}:`, e);
+        }
+      }
+    });
+    
+    // Handle inventory separately
+    if (updateData['inventory.quantity']) {
+        updateData.inventory = { quantity: Number(updateData['inventory.quantity']) };
+        delete updateData['inventory.quantity'];
+    }
+    
+    // 1. Handle new image uploads
+    const newImages = req.files ? req.files.map(file => {
+      const url = process.env.NODE_ENV === 'production'
+        ? file.path
+        : `${req.protocol}://${req.get('host')}/uploads/${file.filename}`;
+      return { url, publicId: file.filename };
+    }) : [];
+
+    // 2. Handle image deletions
+    let imagesToDelete = [];
+    if (req.body.deleteImages) {
+        imagesToDelete = Array.isArray(req.body.deleteImages) ? req.body.deleteImages : [req.body.deleteImages];
+    }
+    
+    // Filter out deleted images from the existing list
+    const remainingImages = product.images.filter(
+      (img) => !imagesToDelete.includes(img.publicId)
+    );
+
+    // Combine remaining and new images
+    updateData.images = [...remainingImages, ...newImages];
+    
+    // TODO: Actually delete files from Cloudinary or local storage
+    // This requires a separate helper function for safety.
+    // For now, they are just removed from the database record.
+
     const updatedProduct = await Product.findByIdAndUpdate(
       req.params.id,
-      { $set: req.body },
+      { $set: updateData },
       { new: true, runValidators: true }
     ).populate("shop", "name avatar");
 
@@ -236,6 +312,13 @@ router.delete("/:id", auth, async (req, res) => {
       return res
         .status(403)
         .json({ message: "Not authorized to delete this product" });
+    }
+
+    // Check if the product is active (available) before deleting
+    if (!product.isActive) {
+      return res
+        .status(400)
+        .json({ message: "Cannot delete an inactive product." });
     }
 
     await Product.findByIdAndDelete(req.params.id);

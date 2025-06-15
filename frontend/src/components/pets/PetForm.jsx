@@ -50,6 +50,7 @@ const PetForm = ({ isEdit = false }) => {
   const [personalityInput, setPersonalityInput] = useState("");
   const [imageFiles, setImageFiles] = useState([]);
   const [existingImages, setExistingImages] = useState([]);
+  const [deletedImages, setDeletedImages] = useState([]);
 
   useEffect(() => {
     if (isEdit && id) {
@@ -139,8 +140,35 @@ const PetForm = ({ isEdit = false }) => {
     setImageFiles(files);
   };
 
+  const handleDeleteExistingImage = (publicId) => {
+    setExistingImages(existingImages.filter(img => img.publicId !== publicId));
+    setDeletedImages([...deletedImages, publicId]);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // --- FORM VALIDATION ---
+    const requiredFields = {
+      'Name': formData.name,
+      'Breed': formData.breed,
+      'Description': formData.description,
+      'Age': formData.age.value,
+    };
+
+    for (const [fieldName, value] of Object.entries(requiredFields)) {
+      if (!value || String(value).trim() === '') {
+        setError(`${fieldName} is a required field.`);
+        return;
+      }
+    }
+
+    if (user?.role === "shop_owner" && (!formData.price || Number(formData.price) <= 0)) {
+      setError("As a shop owner, you must set a valid price greater than zero.");
+      return;
+    }
+    // --- END VALIDATION ---
+
     setLoading(true);
     setError(null);
 
@@ -153,21 +181,6 @@ const PetForm = ({ isEdit = false }) => {
         "Token:",
         localStorage.getItem("token") ? "exists" : "missing"
       );
-
-      // Kiểm tra dữ liệu đầu vào
-      if (!formData.name || !formData.breed || !formData.description) {
-        setError("Vui lòng điền đầy đủ các trường bắt buộc: tên, giống, mô tả");
-        setLoading(false);
-        return;
-      }
-      if (
-        user?.role === "shop_owner" &&
-        (!formData.price || isNaN(formData.price))
-      ) {
-        setError("Vui lòng nhập giá bán hợp lệ");
-        setLoading(false);
-        return;
-      }
 
       // Kiểm tra token
       const token = localStorage.getItem("token");
@@ -236,6 +249,13 @@ const PetForm = ({ isEdit = false }) => {
       if (imageFiles.length > 0) {
         Array.from(imageFiles).forEach((file) => {
           submitData.append("images", file);
+        });
+      }
+
+      // Add list of images to delete
+      if (deletedImages.length > 0) {
+        deletedImages.forEach(publicId => {
+          submitData.append('deleteImages', publicId);
         });
       }
 
@@ -763,35 +783,33 @@ const PetForm = ({ isEdit = false }) => {
                 <h3 className="text-sm font-medium text-gray-700 mb-2">
                   Hình ảnh hiện tại:
                 </h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {existingImages.map((image, index) => (
-                    <div key={index} className="relative">
+                <div className="mt-2 text-sm text-gray-600">
+                  Hiển thị ảnh đã có và ảnh mới tải lên.
+                </div>
+                <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {existingImages.map((img) => (
+                    <div key={img.publicId} className="relative">
                       <img
-                        src={
-                          image.url || "/placeholder.svg?height=100&width=100"
-                        }
-                        alt={`Pet ${index + 1}`}
-                        className="w-full h-24 object-cover rounded-md"
+                        src={img.url}
+                        alt="Existing pet"
+                        className="h-32 w-full object-cover rounded-lg"
                       />
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteExistingImage(img.publicId)}
+                        className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 leading-none"
+                        aria-label="Remove image"
+                      >
+                        &times;
+                      </button>
                     </div>
                   ))}
-                </div>
-              </div>
-            )}
-
-            {/* New Images Preview */}
-            {imageFiles.length > 0 && (
-              <div className="mt-4">
-                <h3 className="text-sm font-medium text-gray-700 mb-2">
-                  Hình ảnh mới:
-                </h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {Array.from(imageFiles).map((file, index) => (
-                    <div key={index} className="relative">
+                    <div key={index}>
                       <img
-                        src={URL.createObjectURL(file) || "/placeholder.svg"}
-                        alt={`New ${index + 1}`}
-                        className="w-full h-24 object-cover rounded-md"
+                        src={URL.createObjectURL(file)}
+                        alt="Preview"
+                        className="h-32 w-full object-cover rounded-lg"
                       />
                     </div>
                   ))}
@@ -800,21 +818,24 @@ const PetForm = ({ isEdit = false }) => {
             )}
           </div>
 
-          {/* Submit Buttons */}
-          <div className="flex justify-end space-x-4">
+          {/* Error and submission */}
+          {error && (
+            <p className="mt-4 text-center text-red-500">{error}</p>
+          )}
+          <div className="mt-8 flex justify-end gap-4">
             <button
               type="button"
-              onClick={() => navigate("/dashboard")}
-              className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              onClick={() => navigate(-1)}
+              className="px-6 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
             >
-              Hủy
+              Back
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+              className="px-6 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400"
             >
-              {loading ? "Đang lưu..." : isEdit ? "Cập nhật" : "Tạo mới"}
+              {loading ? <LoadingSpinner /> : isEdit ? "Cập nhật" : "Thêm thú cưng"}
             </button>
           </div>
         </form>

@@ -58,12 +58,22 @@ const Navbar = () => {
             {isAuthenticated ? (
               <>
                 <CartIcon />
-                <Link
-                  to="/dashboard"
-                  className="text-gray-900 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
-                >
-                  Dashboard
-                </Link>
+                {user?.role === "admin" && (
+                  <Link
+                    to="/admin-dashboard"
+                    className="text-gray-900 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
+                  >
+                    Admin Dashboard
+                  </Link>
+                )}
+                {user?.role === "shop_owner" && (
+                  <Link
+                    to="/shop-dashboard"
+                    className="text-gray-900 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
+                  >
+                    Shop Dashboard
+                  </Link>
+                )}
                 <div className="relative">
                   <button
                     onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -187,12 +197,22 @@ const Navbar = () => {
 
             {isAuthenticated ? (
               <>
-                <Link
-                  to="/dashboard"
-                  className="text-gray-900 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium"
-                >
-                  Dashboard
-                </Link>
+                {user?.role === "admin" && (
+                  <Link
+                    to="/admin-dashboard"
+                    className="text-gray-900 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium"
+                  >
+                    Admin Dashboard
+                  </Link>
+                )}
+                {user?.role === "shop_owner" && (
+                  <Link
+                    to="/shop-dashboard"
+                    className="text-gray-900 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium"
+                  >
+                    Shop Dashboard
+                  </Link>
+                )}
                 <Link
                   to="/profile"
                   className="text-gray-900 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium"
