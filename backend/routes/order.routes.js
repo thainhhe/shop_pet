@@ -3,6 +3,7 @@ const { body, validationResult } = require("express-validator");
 const Order = require("../models/Order");
 const Cart = require("../models/Cart");
 const Product = require("../models/Product");
+const Pet = require("../models/Pet");
 const auth = require("../middleware/auth");
 
 const router = express.Router();
@@ -18,7 +19,10 @@ router.get("/", auth, async (req, res) => {
     const skip = (Number.parseInt(page) - 1) * Number.parseInt(limit);
 
     const orders = await Order.find(filter)
-      .populate("items.product", "name images")
+      .populate({
+        path: "items.item",
+        select: "name images price",
+      })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(Number.parseInt(limit));
@@ -45,7 +49,10 @@ router.get("/:id", auth, async (req, res) => {
     const order = await Order.findOne({
       _id: req.params.id,
       user: req.user.userId,
-    }).populate("items.product", "name images");
+    }).populate({
+      path: "items.item",
+      select: "name images price",
+    });
 
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
@@ -88,37 +95,60 @@ router.post(
 
       const { shippingAddress, paymentMethod, notes } = req.body;
 
-      // Get user's cart
-      const cart = await Cart.findOne({ user: req.user.userId }).populate(
-        "items.product"
-      );
+      // Get user's cart and populate items
+      const cart = await Cart.findOne({ user: req.user.userId });
       if (!cart || cart.items.length === 0) {
         return res.status(400).json({ message: "Cart is empty" });
       }
 
-      // Validate stock availability
-      for (const item of cart.items) {
-        if (!item.product.isActive) {
-          return res
-            .status(400)
-            .json({
-              message: `Product ${item.product.name} is no longer available`,
-            });
+      // Populate cart items manually to handle both products and pets
+      const populatedItems = await Promise.all(
+        cart.items.map(async (item) => {
+          const Model = item.itemType === "pet" ? Pet : Product;
+          const populatedItem = await Model.findById(item.item);
+          return {
+            ...item.toObject(),
+            item: populatedItem,
+          };
+        })
+      );
+
+      // Validate stock availability for products and availability for pets
+      for (const item of populatedItems) {
+        if (!item.item) {
+          return res.status(400).json({
+            message: `Item not found`,
+          });
         }
-        if (item.product.inventory.quantity < item.quantity) {
-          return res
-            .status(400)
-            .json({ message: `Not enough stock for ${item.product.name}` });
+
+        if (item.itemType === "product") {
+          if (!item.item.isActive) {
+            return res.status(400).json({
+              message: `Product ${item.item.name} is no longer available`,
+            });
+          }
+          if (item.item.inventory.quantity < item.quantity) {
+            return res.status(400).json({
+              message: `Not enough stock for ${item.item.name}`,
+            });
+          }
+        } else if (item.itemType === "pet") {
+          if (item.item.status !== "available") {
+            return res.status(400).json({
+              message: `Pet ${item.item.name} is no longer available`,
+            });
+          }
         }
       }
 
       // Create order items
-      const orderItems = cart.items.map((item) => ({
-        product: item.product._id,
-        name: item.product.name,
+      const orderItems = populatedItems.map((item) => ({
+        itemType: item.itemType,
+        item: item.item._id,
+        name: item.item.name,
         price: item.price,
         quantity: item.quantity,
-        image: item.product.images?.[0]?.url || "",
+        image: item.item.images?.[0]?.url || "",
       }));
 
       // Create order
@@ -134,18 +164,28 @@ router.post(
 
       await order.save();
 
-      // Update product inventory
-      for (const item of cart.items) {
-        await Product.findByIdAndUpdate(item.product._id, {
-          $inc: { "inventory.quantity": -item.quantity },
-        });
+      // Update inventory/status
+      for (const item of populatedItems) {
+        if (item.itemType === "product") {
+          await Product.findByIdAndUpdate(item.item._id, {
+            $inc: { "inventory.quantity": -item.quantity },
+          });
+        } else if (item.itemType === "pet") {
+          await Pet.findByIdAndUpdate(item.item._id, {
+            status: "pending",
+          });
+        }
       }
 
       // Clear cart
       cart.items = [];
       await cart.save();
 
-      await order.populate("items.product", "name images");
+      // Populate the order before sending response
+      await order.populate({
+        path: "items.item",
+        select: "name images price",
+      });
 
       res.status(201).json({
         message: "Order created successfully",
@@ -182,11 +222,17 @@ router.put("/cancel/:id", auth, async (req, res) => {
 
     await order.save();
 
-    // Restore product inventory
+    // Restore inventory/status
     for (const item of order.items) {
-      await Product.findByIdAndUpdate(item.product, {
-        $inc: { "inventory.quantity": item.quantity },
-      });
+      if (item.itemType === "product") {
+        await Product.findByIdAndUpdate(item.item, {
+          $inc: { "inventory.quantity": item.quantity },
+        });
+      } else if (item.itemType === "pet") {
+        await Pet.findByIdAndUpdate(item.item, {
+          status: "available",
+        });
+      }
     }
 
     res.json({

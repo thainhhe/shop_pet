@@ -1,11 +1,17 @@
 const mongoose = require("mongoose");
 
 const orderItemSchema = new mongoose.Schema({
-  product: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Product",
+  itemType: {
+    type: String,
+    enum: ["product", "pet"],
     required: true,
   },
+  item: {
+    type: mongoose.Schema.Types.ObjectId,
+    refPath: "itemType",
+    required: true,
+  },
+  // Keep these fields for denormalized data
   name: String,
   price: Number,
   quantity: Number,
@@ -17,8 +23,15 @@ const orderSchema = new mongoose.Schema(
     orderNumber: {
       type: String,
       unique: true,
-      required: true,
+      default: function () {
+        return (
+          "ORD" +
+          Date.now() +
+          Math.random().toString(36).substr(2, 5).toUpperCase()
+        );
+      },
     },
+
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -72,14 +85,5 @@ const orderSchema = new mongoose.Schema(
 );
 
 // Generate order number before saving
-orderSchema.pre("save", function (next) {
-  if (!this.orderNumber) {
-    this.orderNumber =
-      "ORD" +
-      Date.now() +
-      Math.random().toString(36).substr(2, 5).toUpperCase();
-  }
-  next();
-});
 
 module.exports = mongoose.model("Order", orderSchema);

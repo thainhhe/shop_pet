@@ -12,10 +12,12 @@ import ProductList from "./components/products/ProductList";
 import Dashboard from "./pages/Dashboard";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import ShopDashboard from "./pages/ShopDashboard";
+import CheckoutPage from "./components/checkout/CheckoutPage";
+import OrderList from "./components/orders/OrderList";
+import OrderDetail from "./components/orders/OrderDetail";
 
 // Thêm import Footer
 import Footer from "./components/layout/Footer";
-
 
 // Add import for CartProvider and CartPage
 import { CartProvider } from "./contexts/CartContext";
@@ -68,9 +70,37 @@ function App() {
                 />
 
                 <Route
+                  path="/checkout"
+                  element={
+                    <ProtectedRoute>
+                      <CheckoutPage />
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/orders"
+                  element={
+                    <ProtectedRoute>
+                      <OrderList />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/orders/:id"
+                  element={
+                    <ProtectedRoute>
+                      <OrderDetail />
+                    </ProtectedRoute>
+                  }
+                />
+
+                <Route
                   path="/pets/new"
                   element={
-                    <ProtectedRoute requiredRole={["shop_owner"]}>
+                    <ProtectedRoute
+                      requiredRole={["shop_owner", "rescue_center"]}
+                    >
                       <PetForm />
                     </ProtectedRoute>
                   }

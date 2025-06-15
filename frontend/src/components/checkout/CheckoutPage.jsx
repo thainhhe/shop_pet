@@ -59,6 +59,24 @@ const CheckoutPage = () => {
     }).format(price);
   };
 
+  // Helper functions to get item information (similar to CartPage)
+  const getItemImage = (item) => {
+    if (item.itemType === "product") {
+      return (
+        item.item.images?.[0]?.url || "/placeholder.svg?height=48&width=48"
+      );
+    } else if (item.itemType === "pet") {
+      return (
+        item.item.images?.[0]?.url || "/placeholder.svg?height=48&width=48"
+      );
+    }
+    return "/placeholder.svg?height=48&width=48";
+  };
+
+  const getItemName = (item) => {
+    return item.item?.name || "Unknown Item";
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
 
@@ -371,7 +389,7 @@ const CheckoutPage = () => {
                         Thanh toán khi nhận hàng (COD)
                       </label>
                     </div>
-                    <div className="flex items-center">
+                    {/* <div className="flex items-center">
                       <input
                         type="radio"
                         id="momo"
@@ -403,8 +421,8 @@ const CheckoutPage = () => {
                         className="ml-3 block text-sm font-medium text-gray-700"
                       >
                         ZaloPay
-                      </label>
-                    </div>
+                      </label> */}
+                    {/* </div> */}
                     <div className="flex items-center">
                       <input
                         type="radio"
@@ -473,17 +491,14 @@ const CheckoutPage = () => {
                   >
                     <div className="flex-shrink-0">
                       <img
-                        src={
-                          item.product.images?.[0]?.url ||
-                          "/placeholder.svg?height=48&width=48"
-                        }
-                        alt={item.product.name}
+                        src={getItemImage(item)}
+                        alt={getItemName(item)}
                         className="w-12 h-12 object-cover rounded-md"
                       />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">
-                        {item.product.name}
+                        {getItemName(item)}
                       </p>
                       <p className="text-sm text-gray-500">
                         SL: {item.quantity}
