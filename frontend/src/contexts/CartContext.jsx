@@ -1,4 +1,10 @@
-import { createContext, useContext, useReducer, useEffect, useCallback } from "react";
+import {
+  createContext,
+  useContext,
+  useReducer,
+  useEffect,
+  useCallback,
+} from "react";
 import { cartAPI } from "../services/api";
 import { useAuth } from "./AuthContext";
 
@@ -51,7 +57,7 @@ export function CartProvider({ children }) {
       const response = await cartAPI.getCart();
       dispatch({ type: "CART_SUCCESS", payload: response.data.cart });
     } catch (error) {
-      console.error('Cart fetch error:', error);
+      console.error("Cart fetch error:", error);
       dispatch({
         type: "CART_ERROR",
         payload: error.response?.data?.message || "Failed to fetch cart",
@@ -125,19 +131,33 @@ export function CartProvider({ children }) {
     }
   };
 
+  const clearSelectedItems = async (selectedItems) => {
+    try {
+      dispatch({ type: "CART_START" });
+      const response = await cartAPI.removeSelected(selectedItems);
+      dispatch({ type: "CART_SUCCESS", payload: response.data.cart });
+      return { success: true };
+    } catch (error) {
+      const message =
+        error.response?.data?.message || "Failed to remove selected items";
+      dispatch({ type: "CART_ERROR", payload: message });
+      return { success: false, error: message };
+    }
+  };
+
   const value = {
     ...state,
     addToCart,
     updateCartItem,
     removeFromCart,
     clearCart,
+    clearSelectedItems,
     fetchCart,
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
 
-// Sửa cách export hook để tương thích với Fast Refresh
 export function useCart() {
   const context = useContext(CartContext);
   if (!context) {

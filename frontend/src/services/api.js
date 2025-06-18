@@ -72,7 +72,7 @@ export const productsAPI = {
   deleteProduct: (id) => api.delete(`/products/${id}`),
 };
 
-// Add Cart API after Products API
+// Cart API
 export const cartAPI = {
   getCart: () => api.get("/cart"),
   addToCart: (itemId, quantity, itemType) =>
@@ -81,15 +81,19 @@ export const cartAPI = {
     api.put(`/cart/update/${itemId}`, { quantity }),
   removeFromCart: (itemId) => api.delete(`/cart/remove/${itemId}`),
   clearCart: () => api.delete("/cart/clear"),
+  removeSelected: (selectedItems) =>
+    api.post("/cart/removeSelected", { selectedItems }),
 };
 
-// Add Order API after Cart API
+// Order API
 export const orderAPI = {
   getOrders: (params) => api.get("/orders", { params }),
   getOrder: (id) => api.get(`/orders/${id}`),
   createOrder: (orderData) => api.post("/orders/create", orderData),
   cancelOrder: (id, cancelReason) =>
     api.put(`/orders/cancel/${id}`, { cancelReason }),
+  updatePaymentStatus: (id, paymentStatus) =>
+    api.put(`/orders/update-payment/${id}`, { paymentStatus }),
 };
 
 // Adoption API
@@ -107,7 +111,7 @@ export const adoptionAPI = {
   cancelApplication: (id) => api.delete(`/adoptions/${id}`),
 };
 
-// Add Upload API after Order API
+// Upload API
 export const uploadAPI = {
   uploadSingle: (file) => {
     const formData = new FormData();

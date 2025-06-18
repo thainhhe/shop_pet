@@ -245,4 +245,55 @@ router.put("/cancel/:id", auth, async (req, res) => {
   }
 });
 
+// order.routes.js
+router.put("/update-payment/:id", auth, async (req, res) => {
+  try {
+    const { paymentStatus } = req.body;
+
+    if (!["pending", "paid", "failed", "refunded"].includes(paymentStatus)) {
+      return res.status(400).json({ message: "Invalid payment status" });
+    }
+
+    const order = await Order.findOne({
+      _id: req.params.id,
+      user: req.user.userId,
+    });
+
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    order.paymentStatus = paymentStatus;
+    if (paymentStatus === "paid") {
+      order.status = "confirmed"; // Cập nhật trạng thái đơn hàng khi thanh toán thành công
+    } else if (paymentStatus === "failed") {
+      order.status = "cancelled";
+      // Restore inventory/status
+      for (const item of order.items) {
+        if (item.itemType === "product") {
+          await Product.findByIdAndUpdate(item.item, {
+            $inc: { "inventory.quantity": item.quantity },
+          });
+        } else if (item.itemType === "pet") {
+          await Pet.findByIdAndUpdate(item.item, {
+            status: "available",
+          });
+        }
+      }
+    }
+
+    await order.save();
+
+    res.json({
+      message: "Payment status updated successfully",
+      order,
+    });
+  } catch (error) {
+    console.error("Update payment status error:", error);
+    res
+      .status(500)
+      .json({ message: "Server error while updating payment status" });
+  }
+});
+
 module.exports = router;
