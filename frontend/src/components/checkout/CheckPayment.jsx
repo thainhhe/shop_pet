@@ -25,7 +25,7 @@ const CheckPayment = ({ totalMoney, txt, onPaymentSuccess }) => {
               setPaidLoad(1);
               Swal.fire({
                 title: "Payment Successful!",
-                text: "Thank you. Enjoy your meal!",
+                text: "Thank you!",
                 icon: "success",
               }).then(() => {
                 onPaymentSuccess();

@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { petsAPI } from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
 import LoadingSpinner from "../common/LoadingSpinner";
+import api from "../../services/api";
 
 const PetManagement = () => {
   const { user } = useAuth();
@@ -12,6 +13,7 @@ const PetManagement = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState("all");
+  const { token } = useAuth();
 
   useEffect(() => {
     fetchMyPets();
@@ -20,19 +22,17 @@ const PetManagement = () => {
   const fetchMyPets = async () => {
     try {
       setLoading(true);
-      // This would need to be implemented in the backend to filter by owner
-      const response = await petsAPI.getPets({
-        owner: user.id,
-        status: filter === "all" ? "" : filter,
-      });
-      setPets(response.data.pets);
+      const config = {
+        headers: { Authorization: `Bearer ${token}` },
+      };
+      const response = await api.get("/shop/pets", config);
+      setPets(response.data);
     } catch (err) {
       setError("Không thể tải danh sách thú cưng");
     } finally {
       setLoading(false);
     }
   };
-
   const handleDelete = async (petId) => {
     if (window.confirm("Bạn có chắc chắn muốn xóa thú cưng này?")) {
       try {
