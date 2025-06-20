@@ -18,6 +18,7 @@ import CheckoutPage from "./components/checkout/CheckoutPage";
 import OrderList from "./components/orders/OrderList";
 import OrderDetail from "./components/orders/OrderDetail";
 import AdoptionDetail from "./components/adoption/AdoptionDetail";
+import OtpVerification from "./components/adoption/OtpVerification";
 
 // Thêm import Footer
 import Footer from "./components/layout/Footer";
@@ -134,7 +135,9 @@ function App() {
                   <Route
                     path="/pets/:id/edit"
                     element={
-                      <ProtectedRoute requiredRole={["shop_owner", "rescue_center"]}>
+                      <ProtectedRoute
+                        requiredRole={["shop_owner", "rescue_center"]}
+                      >
                         <PetForm isEdit={true} />
                       </ProtectedRoute>
                     }
@@ -143,7 +146,9 @@ function App() {
                   <Route
                     path="/manage/pets"
                     element={
-                      <ProtectedRoute requiredRole={["shop_owner", "rescue_center", "admin"]}>
+                      <ProtectedRoute
+                        requiredRole={["shop_owner", "rescue_center", "admin"]}
+                      >
                         <PetManagement />
                       </ProtectedRoute>
                     }
@@ -163,6 +168,14 @@ function App() {
                     element={
                       <ProtectedRoute requiredRole={["shop_owner"]}>
                         <ProductForm isEdit={true} />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/adoption/:id/verify-otp"
+                    element={
+                      <ProtectedRoute>
+                        <OtpVerification />
                       </ProtectedRoute>
                     }
                   />

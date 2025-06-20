@@ -5,6 +5,9 @@ const auth = require("../middleware/auth");
 const Adoption = require("../models/Adoption");
 const Pet = require("../models/Pet");
 const User = require("../models/User");
+const Otp = require("../models/OTP");
+const generateOtp = () =>
+  Math.floor(100000 + Math.random() * 900000).toString();
 
 // Submit adoption application
 router.post("/apply/:petId", auth, async (req, res) => {
@@ -28,7 +31,7 @@ router.post("/apply/:petId", auth, async (req, res) => {
         .json({ message: "Thú cưng này không có sẵn để nhận nuôi" });
     }
 
-    // Check if user already has a pending application for this pet
+    // Check if user already has a pending application
     const existingApplication = await Adoption.findOne({
       pet: petId,
       "applicant.user": req.user.id,
@@ -41,7 +44,7 @@ router.post("/apply/:petId", auth, async (req, res) => {
         .json({ message: "Bạn đã có đơn đăng ký nhận nuôi thú cưng này" });
     }
 
-    // Create new adoption application
+    // Destructure body
     const {
       livingArrangement,
       hasOtherPets,
@@ -54,6 +57,14 @@ router.post("/apply/:petId", auth, async (req, res) => {
       emergencyContact,
       references,
     } = req.body;
+
+    // Validate required fields
+    if (!emergencyContact || !references || references.length === 0) {
+      return res.status(400).json({
+        message:
+          "Vui lòng cung cấp thông tin liên hệ khẩn cấp và người tham khảo",
+      });
+    }
 
     // Get user info
     const user = await User.findById(req.user.id).select("name email phone");
@@ -76,17 +87,24 @@ router.post("/apply/:petId", auth, async (req, res) => {
       reasonForAdoption,
       emergencyContact,
       references,
+      status: "pending",
+      createdAt: new Date(),
     });
 
     await newApplication.save();
+
+    console.log("✅ New adoption created:", newApplication._id);
 
     res.status(201).json({
       message: "Đơn đăng ký nhận nuôi đã được gửi thành công",
       application: newApplication,
     });
   } catch (error) {
-    console.error("Error submitting adoption application:", error);
-    res.status(500).json({ message: "Lỗi server" });
+    console.error("❌ Lỗi khi gửi đơn:", error);
+    res.status(500).json({
+      message: "Lỗi server khi gửi đơn nhận nuôi",
+      error: error.message,
+    });
   }
 });
 
@@ -347,6 +365,53 @@ router.delete("/:id", auth, async (req, res) => {
     console.error("Error cancelling adoption application:", error);
     res.status(500).json({ message: "Lỗi server" });
   }
+});
+
+router.post("/send-otp", auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user || !user.phone) {
+      return res
+        .status(400)
+        .json({ message: "Không tìm thấy số điện thoại người dùng." });
+    }
+
+    const otpCode = generateOtp();
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 phút
+
+    await Otp.findOneAndUpdate(
+      { userId: req.user.id },
+      { otp: otpCode, expiresAt },
+      { upsert: true, new: true }
+    );
+
+    console.log(`📤 OTP gửi đến ${user.phone}: ${otpCode}`);
+    // 🔐 Tích hợp với Twilio hoặc dịch vụ thật ở đây
+
+    res.json({ message: "OTP đã được gửi về điện thoại." });
+  } catch (err) {
+    console.error("Lỗi gửi OTP:", err);
+    res.status(500).json({ message: "Lỗi gửi OTP" });
+  }
+});
+
+router.post("/verify-otp", auth, async (req, res) => {
+  const { otp } = req.body;
+  const userId = req.user.id;
+
+  const record = await Otp.findOne({ userId });
+
+  if (!record)
+    return res.status(400).json({ message: "Bạn chưa yêu cầu mã OTP" });
+  if (record.otp !== otp)
+    return res.status(400).json({ message: "Mã OTP không đúng" });
+  if (record.expiresAt < new Date())
+    return res.status(400).json({ message: "Mã OTP đã hết hạn" });
+
+  // ✅ Cập nhật trạng thái đơn nếu cần
+  await Otp.deleteOne({ userId }); // Xoá mã OTP đã dùng
+
+  res.json({ message: "Xác minh OTP thành công" });
 });
 
 module.exports = router;
