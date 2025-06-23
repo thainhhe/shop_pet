@@ -74,6 +74,14 @@ const Navbar = () => {
                     Shop Dashboard
                   </Link>
                 )}
+                {user?.role === "rescue_center" && (
+                  <Link
+                    to="/rescue-dashboard"
+                    className="text-gray-900 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
+                  >
+                    Rescue Dashboard
+                  </Link>
+                )}
                 <div className="relative">
                   <button
                     onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -220,6 +228,14 @@ const Navbar = () => {
                     className="text-gray-900 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium"
                   >
                     Shop Dashboard
+                  </Link>
+                )}
+                {user?.role === "rescue_center" && (
+                  <Link
+                    to="/rescue-dashboard"
+                    className="text-gray-900 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium"
+                  >
+                    Rescue Dashboard
                   </Link>
                 )}
                 <Link
