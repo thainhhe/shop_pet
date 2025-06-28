@@ -8,5 +8,9 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": ""
+  "description": "",
+  "dependencies": {
+    "@ant-design/charts": "^2.4.0",
+    "recharts": "^3.0.2"
+  }
 }

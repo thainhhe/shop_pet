@@ -130,4 +130,18 @@ export const uploadAPI = {
   deleteImage: (publicId) => api.delete(`/upload/delete/${publicId}`),
 };
 
+// Admin API
+export const adminAPI = {
+  // User Management
+  getUsers: (params) => api.get("/admin/users", { params }),
+  updateUser: (id, userData) => api.put(`/admin/users/${id}`, userData),
+  deleteUser: (id) => api.delete(`/admin/users/${id}`),
+  changeUserRole: (id, role) => api.put(`/admin/users/${id}/role`, { role }),
+  
+  // Order Management
+  getOrders: (params) => api.get("/admin/orders", { params }),
+  updateOrderStatus: (id, status) => api.put(`/admin/orders/${id}/status`, { status }),
+  getStats: () => api.get("/admin/stats"),
+};
+
 export default api;

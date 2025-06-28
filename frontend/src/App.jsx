@@ -11,6 +11,7 @@ import PetManagement from "./components/pets/PetManagement";
 import ProductList from "./components/products/ProductList";
 import ProductForm from "./components/products/ProductForm";
 import Dashboard from "./pages/Dashboard";
+import AdminDashboard from "./pages/AdminDashboard";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import ShopDashboard from "./pages/ShopDashboard";
 import RescueCenterDashboard from "./pages/rescue_centerDashboard";
@@ -19,6 +20,8 @@ import OrderList from "./components/orders/OrderList";
 import OrderDetail from "./components/orders/OrderDetail";
 import AdoptionDetail from "./components/adoption/AdoptionDetail";
 import OtpVerification from "./components/adoption/OtpVerification";
+import UserManagement from "./components/admin/UserManagement";
+import OrderManagement from "./components/admin/OrderManagement";
 
 // Thêm import Footer
 import Footer from "./components/layout/Footer";
@@ -72,6 +75,15 @@ function App() {
                     path="/admin-dashboard"
                     element={
                       <ProtectedRoute requiredRole="admin">
+                        <AdminDashboard />
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  <Route
+                    path="/dashboard"
+                    element={
+                      <ProtectedRoute>
                         <Dashboard />
                       </ProtectedRoute>
                     }
