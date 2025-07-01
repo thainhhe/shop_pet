@@ -130,4 +130,18 @@ export const uploadAPI = {
   deleteImage: (publicId) => api.delete(`/upload/delete/${publicId}`),
 };
 
+// Hàm gửi tin nhắn đến chatbot
+export const sendChatMessage = async (message, history) => {
+  try {
+    const response = await axios.post(`${API_URL}/chatbot/chat`, {
+      message,
+      history,
+    });
+    return response.data; // Trả về { reply: "..." }
+  } catch (error) {
+    console.error("Error sending chat message:", error);
+    throw error;
+  }
+};
+
 export default api;

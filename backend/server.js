@@ -12,7 +12,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Serve static files from the 'uploads' directory
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Routes
 app.use("/api/auth", require("./routes/auth.routes"));
@@ -23,6 +23,8 @@ app.use("/api/orders", require("./routes/order.routes"));
 app.use("/api/upload", require("./routes/upload.routes"));
 app.use("/api/adoptions", require("./routes/adoption.routes"));
 app.use("/api/shop", require("./routes/shop.routes"));
+const chatbotRoutes = require("./routes/chatbot.routes.js");
+app.use("/api/chatbot", chatbotRoutes);
 
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, "../frontend/dist")));

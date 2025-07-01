@@ -19,6 +19,7 @@ import OrderList from "./components/orders/OrderList";
 import OrderDetail from "./components/orders/OrderDetail";
 import AdoptionDetail from "./components/adoption/AdoptionDetail";
 import OtpVerification from "./components/adoption/OtpVerification";
+import Chatbot from "./components/chatbot/Chatbot";
 
 // Thêm import Footer
 import Footer from "./components/layout/Footer";
@@ -182,6 +183,7 @@ function App() {
                 </Routes>
               </main>
               <Footer />
+              <Chatbot />
             </div>
           </Router>
         </CartProvider>
