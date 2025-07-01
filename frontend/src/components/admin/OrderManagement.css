@@ -1,26 +1,3 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
-}
-
-/* Make Ant Design Tabs equally spaced */
-.ant-tabs-nav-list {
-  display: flex !important;
-  width: 100%;
-}
-.ant-tabs-tab {
-  flex: 1 1 0 !important;
-  justify-content: center !important;
-  text-align: center !important;
-  max-width: none !important;
-}
-
 /* Floating label search input from Uiverse.io */
 .form__group_one {
   position: relative;
@@ -81,4 +58,4 @@
   position: absolute;
   top: -10px;
   transition: 0.2s;
-}
+} 

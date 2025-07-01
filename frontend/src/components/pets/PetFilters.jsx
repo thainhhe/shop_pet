@@ -5,6 +5,11 @@ import { useState } from "react";
 const PetFilters = ({ filters, onFilterChange, onSearch }) => {
   const [searchTerm, setSearchTerm] = useState(filters.search || "");
 
+  const [localMinPrice, setLocalMinPrice] = useState(filters.minPrice || "");
+  const [localMaxPrice, setLocalMaxPrice] = useState(filters.maxPrice || "");
+
+  const [localCity, setLocalCity] = useState(filters.city || "");
+
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     onSearch(searchTerm);
@@ -14,8 +19,15 @@ const PetFilters = ({ filters, onFilterChange, onSearch }) => {
     onFilterChange({ [key]: value });
   };
 
+  const applyLocationFilter = () => {
+    onFilterChange({ city: localCity });
+  };
+
   const clearFilters = () => {
     setSearchTerm("");
+    setLocalMaxPrice("");
+    setLocalMinPrice("");
+    setLocalCity("");
     onFilterChange({
       species: "",
       size: "",
@@ -24,6 +36,12 @@ const PetFilters = ({ filters, onFilterChange, onSearch }) => {
       city: "",
       isForAdoption: "",
       search: "",
+    });
+  };
+  const applyPriceFilter = () => {
+    onFilterChange({
+      minPrice: localMinPrice,
+      maxPrice: localMaxPrice,
     });
   };
 
@@ -50,7 +68,7 @@ const PetFilters = ({ filters, onFilterChange, onSearch }) => {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Tên, giống, mô tả..."
+              placeholder="Giống, mô tả..."
               className="flex-1 border border-gray-300 rounded-l-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
             <button
@@ -119,22 +137,28 @@ const PetFilters = ({ filters, onFilterChange, onSearch }) => {
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Khoảng giá (VNĐ)
         </label>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-2 mb-2">
           <input
             type="number"
             placeholder="Từ"
-            value={filters.minPrice}
-            onChange={(e) => handleFilterChange("minPrice", e.target.value)}
+            value={localMinPrice}
+            onChange={(e) => setLocalMinPrice(e.target.value)}
             className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <input
             type="number"
             placeholder="Đến"
-            value={filters.maxPrice}
-            onChange={(e) => handleFilterChange("maxPrice", e.target.value)}
+            value={localMaxPrice}
+            onChange={(e) => setLocalMaxPrice(e.target.value)}
             className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
+        <button
+          onClick={applyPriceFilter}
+          className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          Áp dụng
+        </button>
       </div>
 
       {/* Location */}
@@ -142,13 +166,21 @@ const PetFilters = ({ filters, onFilterChange, onSearch }) => {
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Thành phố
         </label>
-        <input
-          type="text"
-          placeholder="Nhập tên thành phố"
-          value={filters.city}
-          onChange={(e) => handleFilterChange("city", e.target.value)}
-          className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+        <div className="grid grid-cols-1 gap-2 mb-2">
+          <input
+            type="text"
+            placeholder="Nhập tên thành phố"
+            value={localCity}
+            onChange={(e) => setLocalCity(e.target.value)}
+            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <button
+          onClick={applyLocationFilter}
+          className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          Áp dụng
+        </button>
       </div>
 
       {/* Adoption Filter */}

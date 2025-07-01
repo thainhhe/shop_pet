@@ -40,16 +40,10 @@ const Navbar = () => {
                 Sản phẩm
               </Link>
               <Link
-                to="/adoption"
-                className="text-gray-900 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
+                to="/recommendations"
+                className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
               >
-                Nhận nuôi
-              </Link>
-              <Link
-                to="/community"
-                className="text-gray-900 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Cộng đồng
+                🤖 Gợi ý AI
               </Link>
             </div>
           </div>
@@ -116,10 +110,11 @@ const Navbar = () => {
                           Hồ sơ cá nhân
                         </Link>
                         <Link
-                          to="/settings"
+                          to="/profile/preferences"
                           className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => setIsMenuOpen(false)}
                         >
-                          Cài đặt
+                          Cập nhật sở thích
                         </Link>
                         <button
                           onClick={handleLogout}

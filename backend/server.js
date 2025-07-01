@@ -25,6 +25,8 @@ app.use("/api/adoptions", require("./routes/adoption.routes"));
 app.use("/api/shop", require("./routes/shop.routes"));
 const chatbotRoutes = require("./routes/chatbot.routes.js");
 app.use("/api/chatbot", chatbotRoutes);
+app.use("/api/admin", require("./routes/admin.routes"));
+app.use("/api/recommendation", require("./routes/recommendation.routes"));
 
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, "../frontend/dist")));
