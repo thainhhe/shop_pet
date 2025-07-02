@@ -10,6 +10,7 @@ import PetForm from "./components/pets/PetForm";
 import PetManagement from "./components/pets/PetManagement";
 import ProductList from "./components/products/ProductList";
 import ProductForm from "./components/products/ProductForm";
+import ProductDetail from "./components/products/ProductDetail";
 import Dashboard from "./pages/Dashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
@@ -20,8 +21,12 @@ import OrderList from "./components/orders/OrderList";
 import OrderDetail from "./components/orders/OrderDetail";
 import AdoptionDetail from "./components/adoption/AdoptionDetail";
 import OtpVerification from "./components/adoption/OtpVerification";
+import Chatbot from "./components/chatbot/Chatbot";
 import UserManagement from "./components/admin/UserManagement";
 import OrderManagement from "./components/admin/OrderManagement";
+import RecommendationPage from "./pages/RecommendationPage";
+import UserPreferencesForm from "./components/profile/UserPreferencesForm";
+import RecommendationChatbot from "./components/chatbot/RecommendationChatbot";
 
 // Thêm import Footer
 import Footer from "./components/layout/Footer";
@@ -51,6 +56,7 @@ function App() {
                   <Route path="/pets" element={<PetList />} />
                   <Route path="/pets/:id" element={<PetDetail />} />
                   <Route path="/products" element={<ProductList />} />
+                  <Route path="/products/:id" element={<ProductDetail />} />
 
                   {/* Protected routes */}
                   <Route
@@ -94,6 +100,20 @@ function App() {
                     element={
                       <ProtectedRoute>
                         <CartPage />
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  {/* Recommendation routes */}
+                  <Route
+                    path="/recommendations"
+                    element={<RecommendationPage />}
+                  />
+                  <Route
+                    path="/profile/preferences"
+                    element={
+                      <ProtectedRoute>
+                        <UserPreferencesForm />
                       </ProtectedRoute>
                     }
                   />
@@ -194,6 +214,7 @@ function App() {
                 </Routes>
               </main>
               <Footer />
+              <Chatbot />
             </div>
           </Router>
         </CartProvider>
