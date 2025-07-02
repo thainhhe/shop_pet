@@ -5,7 +5,7 @@ const auth = require("../middleware/auth");
 const Adoption = require("../models/Adoption");
 const Pet = require("../models/Pet");
 const User = require("../models/User");
-const Otp = require("../models/OTP");
+const Otp = require("../models/Otp");
 const generateOtp = () =>
   Math.floor(100000 + Math.random() * 900000).toString();
 
@@ -36,12 +36,10 @@ router.post("/apply/:petId", auth, async (req, res) => {
       status: { $in: ["pending", "approved"] },
     });
     if (existApp) {
-      return res
-        .status(400)
-        .json({
-          message:
-            "Bạn đã có đơn nhận nuôi đang chờ xử lý hoặc đã được duyệt với thú cưng này.",
-        });
+      return res.status(400).json({
+        message:
+          "Bạn đã có đơn nhận nuôi đang chờ xử lý hoặc đã được duyệt với thú cưng này.",
+      });
     }
 
     const user = await User.findById(req.user.userId).select(
