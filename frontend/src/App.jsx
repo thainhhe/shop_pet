@@ -10,6 +10,7 @@ import PetForm from "./components/pets/PetForm";
 import PetManagement from "./components/pets/PetManagement";
 import ProductList from "./components/products/ProductList";
 import ProductForm from "./components/products/ProductForm";
+import ProductDetail from "./components/products/ProductDetail";
 import Dashboard from "./pages/Dashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
@@ -55,6 +56,7 @@ function App() {
                   <Route path="/pets" element={<PetList />} />
                   <Route path="/pets/:id" element={<PetDetail />} />
                   <Route path="/products" element={<ProductList />} />
+                  <Route path="/products/:id" element={<ProductDetail />} />
 
                   {/* Protected routes */}
                   <Route
