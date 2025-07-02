@@ -10,7 +10,7 @@ export default defineConfig({
     host: true,
     proxy: {
       "/api": {
-        target: "https://media.2handshop.id.vn",
+        target: "http://localhost:5000",
         changeOrigin: true,
       },
     },
