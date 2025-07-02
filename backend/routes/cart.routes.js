@@ -22,12 +22,13 @@ router.get("/", auth, async (req, res) => {
       cart.items.map(async (item) => {
         try {
           const Model = item.itemType === "pet" ? Pet : Product;
-          const populatedItem = await Model.findById(item.item)
-            .select("name price images inventory isActive status");
-          
+          const populatedItem = await Model.findById(item.item).select(
+            "name price images inventory isActive status"
+          );
+
           return {
             ...item.toObject(),
-            item: populatedItem
+            item: populatedItem,
           };
         } catch (err) {
           console.error(`Error populating item ${item._id}:`, err);
@@ -74,7 +75,9 @@ router.post(
             .json({ message: "Product not found or unavailable" });
         }
         if (item.inventory.quantity < quantity) {
-          return res.status(400).json({ message: "Not enough stock available" });
+          return res
+            .status(400)
+            .json({ message: "Not enough stock available" });
         }
       } else if (itemType === "pet") {
         item = await Pet.findById(itemId);
@@ -84,7 +87,9 @@ router.post(
             .json({ message: "Pet not found or unavailable" });
         }
         if (quantity > 1) {
-          return res.status(400).json({ message: "Can only add one pet at a time" });
+          return res
+            .status(400)
+            .json({ message: "Can only add one pet at a time" });
         }
       }
 
@@ -113,11 +118,11 @@ router.post(
         }
       } else {
         // Add new item
-        console.log('Adding new item to cart:', {
+        console.log("Adding new item to cart:", {
           itemType,
           item: itemId,
           quantity,
-          price: item.price
+          price: item.price,
         });
         cart.items.push({
           itemType,
@@ -127,21 +132,21 @@ router.post(
         });
       }
 
-      console.log('Cart before save:', cart);
+      console.log("Cart before save:", cart);
       await cart.save();
-      console.log('Cart after save:', cart);
-      
+      console.log("Cart after save:", cart);
+
       // Populate with correct model based on itemType
       await cart.populate({
-        path: 'items.item',
-        select: 'name price images inventory isActive status',
-        options: { lean: true }
+        path: "items.item",
+        select: "name price images inventory isActive status",
+        options: { lean: true },
       });
-      console.log('Cart after populate:', cart);
+      console.log("Cart after populate:", cart);
 
       // Ensure cart is saved after population
       await cart.save();
-      console.log('Cart after final save:', cart);
+      console.log("Cart after final save:", cart);
 
       res.json({
         message: "Item added to cart successfully",
@@ -153,10 +158,6 @@ router.post(
     }
   }
 );
-
-
-
-
 
 // Update cart item quantity
 router.put(
@@ -266,6 +267,44 @@ router.delete("/clear", auth, async (req, res) => {
   } catch (error) {
     console.error("Clear cart error:", error);
     res.status(500).json({ message: "Server error while clearing cart" });
+  }
+});
+
+// cart.routes.js
+router.post("/removeSelected", auth, async (req, res) => {
+  try {
+    const { selectedItems } = req.body;
+
+    if (!Array.isArray(selectedItems) || selectedItems.length === 0) {
+      return res.status(400).json({ message: "No items selected" });
+    }
+
+    const cart = await Cart.findOne({ user: req.user.userId });
+    if (!cart) {
+      return res.status(404).json({ message: "Cart not found" });
+    }
+
+    // Filter out selected items
+    cart.items = cart.items.filter(
+      (item) => !selectedItems.includes(item.item._id.toString())
+    );
+
+    await cart.save();
+
+    await cart.populate({
+      path: "items.item",
+      select: "name price images inventory isActive status",
+    });
+
+    res.json({
+      message: "Selected items removed from cart successfully",
+      cart,
+    });
+  } catch (error) {
+    console.error("Remove selected items error:", error);
+    res
+      .status(500)
+      .json({ message: "Server error while removing selected items" });
   }
 });
 

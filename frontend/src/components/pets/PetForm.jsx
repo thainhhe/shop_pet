@@ -141,7 +141,9 @@ const PetForm = ({ isEdit = false }) => {
   };
 
   const handleDeleteExistingImage = (publicId) => {
-    setExistingImages(existingImages.filter(img => img.publicId !== publicId));
+    setExistingImages(
+      existingImages.filter((img) => img.publicId !== publicId)
+    );
     setDeletedImages([...deletedImages, publicId]);
   };
 
@@ -150,21 +152,26 @@ const PetForm = ({ isEdit = false }) => {
 
     // --- FORM VALIDATION ---
     const requiredFields = {
-      'Name': formData.name,
-      'Breed': formData.breed,
-      'Description': formData.description,
-      'Age': formData.age.value,
+      Name: formData.name,
+      Breed: formData.breed,
+      Description: formData.description,
+      Age: formData.age.value,
     };
 
     for (const [fieldName, value] of Object.entries(requiredFields)) {
-      if (!value || String(value).trim() === '') {
+      if (!value || String(value).trim() === "") {
         setError(`${fieldName} is a required field.`);
         return;
       }
     }
 
-    if (user?.role === "shop_owner" && (!formData.price || Number(formData.price) <= 0)) {
-      setError("As a shop owner, you must set a valid price greater than zero.");
+    if (
+      user?.role === "shop_owner" &&
+      (!formData.price || Number(formData.price) <= 0)
+    ) {
+      setError(
+        "As a shop owner, you must set a valid price greater than zero."
+      );
       return;
     }
     // --- END VALIDATION ---
@@ -254,8 +261,8 @@ const PetForm = ({ isEdit = false }) => {
 
       // Add list of images to delete
       if (deletedImages.length > 0) {
-        deletedImages.forEach(publicId => {
-          submitData.append('deleteImages', publicId);
+        deletedImages.forEach((publicId) => {
+          submitData.append("deleteImages", publicId);
         });
       }
 
@@ -271,7 +278,7 @@ const PetForm = ({ isEdit = false }) => {
       }
 
       console.log("Success response:", response.data);
-      navigate("/dashboard");
+      navigate("/pets");
     } catch (err) {
       console.error("Submit error:", err);
       const errorMessage =
@@ -819,9 +826,7 @@ const PetForm = ({ isEdit = false }) => {
           </div>
 
           {/* Error and submission */}
-          {error && (
-            <p className="mt-4 text-center text-red-500">{error}</p>
-          )}
+          {error && <p className="mt-4 text-center text-red-500">{error}</p>}
           <div className="mt-8 flex justify-end gap-4">
             <button
               type="button"
@@ -835,7 +840,13 @@ const PetForm = ({ isEdit = false }) => {
               disabled={loading}
               className="px-6 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400"
             >
-              {loading ? <LoadingSpinner /> : isEdit ? "Cập nhật" : "Thêm thú cưng"}
+              {loading ? (
+                <LoadingSpinner />
+              ) : isEdit ? (
+                "Cập nhật"
+              ) : (
+                "Thêm thú cưng"
+              )}
             </button>
           </div>
         </form>

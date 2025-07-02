@@ -23,6 +23,7 @@ app.use("/api/orders", require("./routes/order.routes"));
 app.use("/api/upload", require("./routes/upload.routes"));
 app.use("/api/adoptions", require("./routes/adoption.routes"));
 app.use("/api/shop", require("./routes/shop.routes"));
+app.use("/api/admin", require("./routes/admin.routes"));
 
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, "../frontend/dist")));

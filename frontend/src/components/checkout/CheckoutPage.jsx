@@ -6,9 +6,17 @@ import { useCart } from "../../contexts/CartContext";
 import { useAuth } from "../../contexts/AuthContext";
 import { orderAPI } from "../../services/api";
 import LoadingSpinner from "../common/LoadingSpinner";
+import { Modal } from "antd";
+import CheckPayment from "./CheckPayment";
 
 const CheckoutPage = () => {
-  const { cart, loading: cartLoading, error: cartError, fetchCart } = useCart();
+  const {
+    cart,
+    loading: cartLoading,
+    error: cartError,
+    fetchCart,
+    clearSelectedItems,
+  } = useCart();
   const { user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
@@ -29,6 +37,11 @@ const CheckoutPage = () => {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderError, setOrderError] = useState(null);
+  const [showQRCode, setShowQRCode] = useState(false);
+  const [qrCodeValue, setQrCodeValue] = useState("");
+  const [paymentCheckText, setPaymentCheckText] = useState("");
+  const [totalAmount, setTotalAmount] = useState(0);
+  const [orderId, setOrderId] = useState(null);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -37,7 +50,7 @@ const CheckoutPage = () => {
     }
 
     fetchCart();
-  }, [isAuthenticated]);
+  }, [isAuthenticated, fetchCart, navigate]);
 
   useEffect(() => {
     if (user) {
@@ -59,7 +72,6 @@ const CheckoutPage = () => {
     }).format(price);
   };
 
-  // Helper functions to get item information (similar to CartPage)
   const getItemImage = (item) => {
     if (item.itemType === "product") {
       return (
@@ -101,7 +113,6 @@ const CheckoutPage = () => {
     const newErrors = {};
     const { shippingAddress, paymentMethod } = formData;
 
-    // Validate shipping address
     if (!shippingAddress.name)
       newErrors["shippingAddress.name"] = "Họ tên là bắt buộc";
     if (!shippingAddress.phone)
@@ -113,8 +124,7 @@ const CheckoutPage = () => {
     if (!shippingAddress.district)
       newErrors["shippingAddress.district"] = "Quận/Huyện là bắt buộc";
 
-    // Validate payment method
-    if (!["cod", "momo", "zalopay", "bank_transfer"].includes(paymentMethod)) {
+    if (!["cod", "bank_transfer"].includes(paymentMethod)) {
       newErrors.paymentMethod = "Phương thức thanh toán không hợp lệ";
     }
 
@@ -122,25 +132,182 @@ const CheckoutPage = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const generateRandomText = (length) => {
+    const allowedCharacters =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let result = "";
+    for (let i = 0; i < length; i++) {
+      const randomChar = allowedCharacters.charAt(
+        Math.floor(Math.random() * allowedCharacters.length)
+      );
+      result += randomChar;
+    }
+    return result;
+  };
 
+  const generateQRCodeUrl = (amount, message) => {
+    return `https://img.vietqr.io/image/ICB-105883688517-compact2.png?amount=${amount}&addInfo=${message}`;
+  };
+
+  const readNumber = (number) => {
+    const unitTexts = [
+      "",
+      "một",
+      "hai",
+      "ba",
+      "bốn",
+      "năm",
+      "sáu",
+      "bảy",
+      "tám",
+      "chín",
+    ];
+    const hundredsTexts = [
+      "",
+      "nghìn",
+      "triệu",
+      "tỷ",
+      "nghìn tỷ",
+      "triệu tỷ",
+      "tỷ ty",
+    ];
+
+    const read3Number = (num, checkNumber = false) => {
+      const absNumber = Math.abs(num);
+      const hundreds = Math.floor(absNumber / 100);
+      const remainder = absNumber % 100;
+      const tens = Math.floor(remainder / 10);
+      const units = remainder % 10;
+
+      let result = "";
+
+      if (hundreds > 0) {
+        result += unitTexts[hundreds] + " trăm ";
+      } else if (checkNumber && (tens > 0 || units > 0)) {
+        result += "không trăm ";
+      }
+
+      if (tens > 1) {
+        result += unitTexts[tens] + " mươi ";
+      } else if (tens === 1) {
+        result += "mười ";
+      } else if (checkNumber && units > 0) {
+        result += "lẻ ";
+      }
+
+      if (tens > 1 && units === 1) {
+        result += "mốt";
+      } else if (tens > 0 && units === 5) {
+        result += "lăm";
+      } else if (units > 0) {
+        result += unitTexts[units];
+      }
+      return result.trim();
+    };
+
+    let result = "";
+    let index = 0;
+    let absNumber = Math.abs(number);
+    const lastIndex = Math.floor(String(absNumber).length / 3);
+
+    if (!absNumber) return "Không đồng";
+
+    do {
+      const hashScale = index !== lastIndex;
+      const threeDigits = read3Number(absNumber % 1000, hashScale);
+
+      if (threeDigits) {
+        result = `${threeDigits} ${hundredsTexts[index]} ${result}`;
+      }
+
+      absNumber = Math.floor(absNumber / 1000);
+      index++;
+    } while (absNumber > 0);
+
+    return result.trim() + " đồng";
+  };
+
+  const handleQRCodePayment = async () => {
+    try {
+      // Create order first
+      const response = await orderAPI.createOrder({
+        ...formData,
+        paymentStatus: "pending",
+      });
+      setOrderId(response.data.order._id);
+      setTotalAmount(cart.totalAmount);
+      const randomText = generateRandomText(10);
+      setPaymentCheckText(randomText);
+      setQrCodeValue(generateQRCodeUrl(cart.totalAmount, randomText));
+      setShowQRCode(true);
+    } catch (error) {
+      console.error("Error creating order for QR payment:", error);
+      setOrderError(
+        error.response?.data?.message || "Đã xảy ra lỗi khi tạo đơn hàng"
+      );
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleOrderPlacement = async () => {
+    try {
+      // Update payment status to "paid"
+      await orderAPI.updatePaymentStatus(orderId, "paid");
+
+      // Remove selected items from cart
+      const selectedItems = cart.items.map((item) => item.item._id.toString());
+      const response = await clearSelectedItems(selectedItems);
+      if (!response.success) {
+        throw new Error(response.error);
+      }
+
+      setShowQRCode(false);
+      navigate(`/orders/${orderId}?success=true`);
+    } catch (error) {
+      console.error("Error placing order:", error);
+      setOrderError("Có lỗi xảy ra trong quá trình hoàn tất đơn hàng.");
+    }
+  };
+
+  const handleCheckout = async () => {
     if (!validateForm()) return;
 
     setIsSubmitting(true);
     setOrderError(null);
 
-    try {
-      const response = await orderAPI.createOrder(formData);
-      navigate(`/orders/${response.data.order._id}?success=true`);
-    } catch (error) {
-      console.error("Checkout error:", error);
-      setOrderError(
-        error.response?.data?.message || "Đã xảy ra lỗi khi tạo đơn hàng"
-      );
-    } finally {
-      setIsSubmitting(false);
+    const textToRead = readNumber(cart.totalAmount);
+    const utterance = new SpeechSynthesisUtterance(
+      `Số tiền cần thanh toán là: ${textToRead}`
+    );
+    utterance.lang = "vi-VN";
+    window.speechSynthesis.speak(utterance);
+
+    if (formData.paymentMethod === "bank_transfer") {
+      await handleQRCodePayment();
+    } else {
+      try {
+        const response = await orderAPI.createOrder(formData);
+        const selectedItems = cart.items.map((item) =>
+          item.item._id.toString()
+        );
+        const clearResponse = await clearSelectedItems(selectedItems);
+        if (!clearResponse.success) {
+          throw new Error(clearResponse.error);
+        }
+        navigate(`/orders/${response.data.order._id}?success=true`);
+      } catch (error) {
+        console.error("Checkout error:", error);
+        setOrderError(
+          error.response?.data?.message || "Đã xảy ra lỗi khi tạo đơn hàng"
+        );
+      }
     }
+    setIsSubmitting(false);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    await handleCheckout();
   };
 
   if (cartLoading) return <LoadingSpinner />;
@@ -389,40 +556,6 @@ const CheckoutPage = () => {
                         Thanh toán khi nhận hàng (COD)
                       </label>
                     </div>
-                    {/* <div className="flex items-center">
-                      <input
-                        type="radio"
-                        id="momo"
-                        name="paymentMethod"
-                        value="momo"
-                        checked={formData.paymentMethod === "momo"}
-                        onChange={handleChange}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                      />
-                      <label
-                        htmlFor="momo"
-                        className="ml-3 block text-sm font-medium text-gray-700"
-                      >
-                        MoMo
-                      </label>
-                    </div>
-                    <div className="flex items-center">
-                      <input
-                        type="radio"
-                        id="zalopay"
-                        name="paymentMethod"
-                        value="zalopay"
-                        checked={formData.paymentMethod === "zalopay"}
-                        onChange={handleChange}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                      />
-                      <label
-                        htmlFor="zalopay"
-                        className="ml-3 block text-sm font-medium text-gray-700"
-                      >
-                        ZaloPay
-                      </label> */}
-                    {/* </div> */}
                     <div className="flex items-center">
                       <input
                         type="radio"
@@ -531,6 +664,33 @@ const CheckoutPage = () => {
             </div>
           </div>
         </div>
+
+        {/* QR Code Modal */}
+        <Modal
+          visible={showQRCode}
+          onCancel={() => setShowQRCode(false)}
+          footer={null}
+          maskClosable={false}
+          closable={true}
+        >
+          <h6 style={{ textAlign: "center" }}>
+            Vui lòng chuyển khoản đúng số tiền. Mọi lỗi về chuyển thiếu hoặc
+            thừa chúng tôi không hỗ trợ.
+          </h6>
+          <img
+            src={qrCodeValue}
+            alt="QR Code"
+            style={{ maxWidth: "100%", margin: "auto", display: "block" }}
+          />
+          <p style={{ textAlign: "center" }}>
+            <strong>Quét mã để thanh toán</strong>
+          </p>
+          <CheckPayment
+            totalMoney={totalAmount}
+            txt={paymentCheckText}
+            onPaymentSuccess={handleOrderPlacement}
+          />
+        </Modal>
       </div>
     </div>
   );

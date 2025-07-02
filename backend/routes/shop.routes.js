@@ -14,6 +14,60 @@ const isShopOwner = (req, res, next) => {
   next();
 };
 
+// GET /api/shop/rescue-stats
+// Get dashboard statistics for rescue center (accessible by both shop_owner and rescue_center)
+router.get('/rescue-stats', auth, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const userRole = req.user.role;
+
+    // Only allow shop_owner and rescue_center
+    if (!["shop_owner", "rescue_center"].includes(userRole)) {
+      return res.status(403).json({ message: "Access denied. Not authorized." });
+    }
+
+    // Get all pets for the user
+    const userPets = await Pet.find({ owner: userId });
+
+    // Calculate rescue center specific stats
+    const totalPets = userPets.length;
+    const availablePets = userPets.filter(pet => pet.status === 'available').length;
+    const pendingAdoptions = userPets.filter(pet => pet.status === 'pending').length;
+    const adoptedPets = userPets.filter(pet => pet.status === 'adopted').length;
+
+    res.json({
+      totalPets,
+      availablePets,
+      pendingAdoptions,
+      adoptedPets
+    });
+
+  } catch (error) {
+    console.error("Error fetching rescue stats:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// GET /api/shop/rescue-pets
+// Get all pets for rescue center (accessible by both shop_owner and rescue_center)
+router.get('/rescue-pets', auth, async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const userRole = req.user.role;
+
+    // Only allow shop_owner and rescue_center
+    if (!["shop_owner", "rescue_center"].includes(userRole)) {
+      return res.status(403).json({ message: "Access denied. Not authorized." });
+    }
+
+    const pets = await Pet.find({ owner: userId }).sort({ createdAt: -1 });
+    res.json(pets);
+  } catch (error) {
+    console.error("Error fetching rescue pets:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 router.use(auth, isShopOwner);
 
 // GET /api/shop/stats

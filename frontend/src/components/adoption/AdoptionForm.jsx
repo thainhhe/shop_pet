@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useAdoption } from "../../contexts/AdoptionContext";
 import { useAuth } from "../../contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const AdoptionForm = ({ pet, onClose }) => {
   const { user } = useAuth();
@@ -68,6 +69,26 @@ const AdoptionForm = ({ pet, onClose }) => {
     });
   };
 
+  const sendOtp = async () => {
+    try {
+      dispatch({ type: "ADOPTION_START" });
+      const res = await axios.post(
+        "/api/adoptions/send-otp",
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+          },
+        }
+      );
+      return { success: true, message: res.data.message };
+    } catch (error) {
+      const message = error.response?.data?.message || "Lỗi gửi OTP";
+      dispatch({ type: "ADOPTION_ERROR", payload: message });
+      return { success: false, error: message };
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -94,6 +115,13 @@ const AdoptionForm = ({ pet, onClose }) => {
 
       if (result.success) {
         setSuccess(true);
+
+        const otpResult = await sendOtp();
+        if (otpResult.success) {
+          navigate(`/adoption/${result.application._id}/verify-otp`);
+        } else {
+          setError("Gửi OTP thất bại: " + otpResult.error);
+        }
       } else {
         setError(result.error);
       }
@@ -147,8 +175,8 @@ const AdoptionForm = ({ pet, onClose }) => {
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-lg p-6 max-w-3xl w-full my-8">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-start overflow-y-auto z-50 p-4">
+      <div className="bg-white rounded-lg p-6 max-w-3xl w-full my-8 max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold">
             Đơn đăng ký nhận nuôi {pet.name}
@@ -441,6 +469,10 @@ const AdoptionForm = ({ pet, onClose }) => {
               </p>
             </div>
           </div>
+          {error && <div className="text-red-500">{error}</div>}
+          {success && (
+            <div className="text-green-600">Đơn đã gửi! Đang gửi mã OTP...</div>
+          )}
 
           <div className="flex justify-end space-x-3">
             <button
