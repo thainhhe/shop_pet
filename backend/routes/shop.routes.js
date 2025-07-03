@@ -128,6 +128,82 @@ router.get('/pets', async (req, res) => {
   }
 });
 
+// GET /api/shop/orders
+router.get('/orders', async (req, res) => {
+  try {
+    const { page = 1, limit = 10, status } = req.query;
+    const shopId = req.user.userId;
+
+    // Lấy tất cả sản phẩm và pet của shop
+    const shopProducts = await Product.find({ shop: shopId }).select('_id');
+    const shopPets = await Pet.find({ owner: shopId }).select('_id');
+    const productIds = shopProducts.map(p => p._id.toString());
+    const petIds = shopPets.map(p => p._id.toString());
+
+    // Tìm tất cả order có ít nhất 1 item là sản phẩm hoặc pet của shop
+    const filter = {
+      $or: [
+        { 'items': { $elemMatch: { itemType: 'product', item: { $in: productIds } } } },
+        { 'items': { $elemMatch: { itemType: 'pet', item: { $in: petIds } } } },
+      ]
+    };
+    if (status) filter.status = status;
+
+    const skip = (Number.parseInt(page) - 1) * Number.parseInt(limit);
+
+    const orders = await Order.find(filter)
+      .populate('user', 'name email')
+      .populate('items.item', 'name images price')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(Number.parseInt(limit));
+
+    const total = await Order.countDocuments(filter);
+
+    res.json({
+      orders,
+      pagination: {
+        current: Number.parseInt(page),
+        pages: Math.ceil(total / Number.parseInt(limit)),
+        total,
+      },
+    });
+  } catch (error) {
+    console.error('Get shop orders error:', error);
+    res.status(500).json({ message: 'Server error while fetching shop orders' });
+  }
+});
+
+// Cập nhật trạng thái đơn hàng của shop
+router.put('/orders/:id/status', async (req, res) => {
+  try {
+    const { status } = req.body;
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: "Order not found" });
+
+    // Kiểm tra quyền: chỉ cho phép cập nhật nếu đơn hàng thuộc shop này
+    const shopId = req.user.userId;
+    const shopProducts = await Product.find({ shop: shopId }).select('_id');
+    const shopPets = await Pet.find({ owner: shopId }).select('_id');
+    const productIds = shopProducts.map(p => p._id.toString());
+    const petIds = shopPets.map(p => p._id.toString());
+    const isShopOrder = order.items.some(
+      item =>
+        (item.itemType === 'product' && productIds.includes(item.item.toString())) ||
+        (item.itemType === 'pet' && petIds.includes(item.item.toString()))
+    );
+    if (!isShopOrder) return res.status(403).json({ message: "Not authorized for this order" });
+
+    // Cập nhật trạng thái
+    order.status = status;
+    await order.save();
+    res.json({ message: "Order status updated", order });
+  } catch (error) {
+    console.error("Update shop order status error:", error);
+    res.status(500).json({ message: "Server error while updating order status" });
+  }
+});
+
 // More routes will be added here
 
 module.exports = router; 
