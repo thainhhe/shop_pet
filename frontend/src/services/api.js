@@ -43,7 +43,11 @@ export const authAPI = {
   register: (userData) => api.post("/auth/register", userData),
   login: (credentials) => api.post("/auth/login", credentials),
   getProfile: () => api.get("/auth/me"),
+  getUserProfile: () => api.get("/auth/profile"),
   updateProfile: (userData) => api.put("/auth/profile", userData),
+  forgotPassword: (email) => api.post("/auth/forgot-password", { email }),
+  resetPassword: (token, passwordData) => api.post(`/auth/reset-password/${token}`, passwordData),
+  verifyResetToken: (token) => api.get(`/auth/verify-reset-token/${token}`),
 };
 
 // Pets API
