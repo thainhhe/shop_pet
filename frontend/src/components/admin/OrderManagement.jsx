@@ -64,6 +64,31 @@ export const statusIcons = {
     cancelled: <CloseCircleOutlined />,
 };
 
+
+// Thêm payment status labels và colors
+const paymentStatusLabels = {
+    pending: "Chờ thanh toán",
+    paid: "Đã thanh toán",
+    failed: "Thanh toán thất bại",
+    refunded: "Đã hoàn tiền",
+};
+
+const paymentStatusColors = {
+    pending: "default",
+    paid: "green",
+    failed: "red",
+    refunded: "orange",
+};
+
+const paymentStatusIcons = {
+    pending: <ClockCircleOutlined />,
+    paid: <CheckCircleOutlined />,
+    failed: <CloseCircleOutlined />,
+    refunded: <EditOutlined />,
+};
+
+// Định nghĩa workflow cho việc chuyển trạng thái
+const statusWorkflow = {
 export const statusWorkflow = {
     pending: ["confirmed", "cancelled"],
     confirmed: ["processing", "cancelled"],
@@ -171,7 +196,7 @@ export const OrderManagementBase = ({
             title: "Mã đơn",
             dataIndex: "orderNumber",
             key: "orderNumber",
-            width: "15%",
+            width: "12%",
             ellipsis: true,
             render: (orderNumber) => (
                 <span className="font-mono text-sm bg-gray-100 px-2 py-1 rounded">
@@ -183,7 +208,7 @@ export const OrderManagementBase = ({
             title: "Khách hàng",
             dataIndex: ["user", "name"],
             key: "user",
-            width: "25%",
+            width: "20%",
             render: (_, record) => (
                 <div>
                     <div className="font-medium">{record.user?.name}</div>
@@ -196,7 +221,7 @@ export const OrderManagementBase = ({
             title: "Sản phẩm",
             dataIndex: "items",
             key: "items",
-            width: "20%",
+            width: "15%",
             render: (items) => (
                 <div className="text-sm">
                     <div>{items?.length || 0} sản phẩm</div>
@@ -208,10 +233,40 @@ export const OrderManagementBase = ({
             ),
         },
         {
+            title: "Trạng thái",
+            dataIndex: "status",
+            key: "status",
+            width: "12%",
+            render: (orderStatus) => (
+                <Tag
+                    color={statusColors[orderStatus]}
+                    icon={statusIcons[orderStatus]}
+                    className="flex items-center gap-1"
+                >
+                    {statusLabels[orderStatus]}
+                </Tag>
+            ),
+        },
+        {
+            title: "Thanh toán",
+            dataIndex: "paymentStatus",
+            key: "paymentStatus",
+            width: "12%",
+            render: (paymentStatus) => (
+                <Tag
+                    color={paymentStatusColors[paymentStatus]}
+                    icon={paymentStatusIcons[paymentStatus]}
+                    className="flex items-center gap-1"
+                >
+                    {paymentStatusLabels[paymentStatus]}
+                </Tag>
+            ),
+        },
+        {
             title: "Tổng tiền",
             dataIndex: "totalAmount",
             key: "totalAmount",
-            width: "15%",
+            width: "12%",
             align: "right",
             render: (amount) => (
                 <span className="font-medium text-green-600">
@@ -223,7 +278,7 @@ export const OrderManagementBase = ({
             title: "Ngày tạo",
             dataIndex: "createdAt",
             key: "createdAt",
-            width: "15%",
+            width: "12%",
             render: (date) => (
                 <div className="text-sm">
                     <div>{new Date(date).toLocaleDateString()}</div>
@@ -380,6 +435,7 @@ export const OrderManagementBase = ({
     );
 };
 
+export default OrderManagement;
 // ... giữ lại OrderManagement cũ để dùng cho admin
 const OrderManagement = () => {
     return (
@@ -399,3 +455,4 @@ const OrderManagement = () => {
 };
 
 export default OrderManagement; 
+

@@ -14,10 +14,12 @@ router.post("/apply/:petId", auth, async (req, res) => {
     const petId = req.params.petId;
 
     // 1. Validate pet ID
+    // 1. Validate pet ID
     if (!mongoose.Types.ObjectId.isValid(petId)) {
       return res.status(400).json({ message: "ID thú cưng không hợp lệ" });
     }
 
+    // 2. Tìm pet còn 'available'
     // 2. Tìm pet còn 'available'
     const pet = await Pet.findById(petId);
     if (!pet) {
@@ -31,15 +33,20 @@ router.post("/apply/:petId", auth, async (req, res) => {
 
     // 3. Kiểm tra user có pending/approved đơn nào với pet này chưa
     const existApp = await Adoption.findOne({
+    // 3. Kiểm tra user có pending/approved đơn nào với pet này chưa
+    const existApp = await Adoption.findOne({
       pet: petId,
+      "applicant.user": req.user.userId,
       "applicant.user": req.user.userId,
       status: { $in: ["pending", "approved"] },
     });
     if (existApp) {
-      return res.status(400).json({
-        message:
-          "Bạn đã có đơn nhận nuôi đang chờ xử lý hoặc đã được duyệt với thú cưng này.",
-      });
+      return res
+        .status(400)
+        .json({
+          message:
+            "Bạn đã có đơn nhận nuôi đang chờ xử lý hoặc đã được duyệt với thú cưng này.",
+        });
     }
 
     const user = await User.findById(req.user.userId).select(
@@ -59,8 +66,10 @@ router.post("/apply/:petId", auth, async (req, res) => {
       return res
         .status(400)
         .json({ message: "Không tìm thấy thông tin người dùng." });
+        .json({ message: "Không tìm thấy thông tin người dùng." });
     }
 
+    // 5. Lấy data từ form (frontend)
     // 5. Lấy data từ form (frontend)
     const {
       livingArrangement,
@@ -92,19 +101,41 @@ router.post("/apply/:petId", auth, async (req, res) => {
       !references[0].phone ||
       !references[0].relationship
     ) {
+    // 6. Validate dữ liệu form
+    if (
+      !livingArrangement ||
+      !workSchedule ||
+      !experience ||
+      !reasonForAdoption ||
+      !emergencyContact ||
+      !emergencyContact.name ||
+      !emergencyContact.phone ||
+      !emergencyContact.relationship ||
+      !references ||
+      !Array.isArray(references) ||
+      references.length === 0 ||
+      !references[0].name ||
+      !references[0].phone ||
+      !references[0].relationship
+    ) {
       return res.status(400).json({
         message:
+          "Vui lòng điền đầy đủ thông tin: điều kiện sống, lịch làm việc, kinh nghiệm, lý do nhận nuôi, liên hệ khẩn cấp, và người tham khảo.",
           "Vui lòng điền đầy đủ thông tin: điều kiện sống, lịch làm việc, kinh nghiệm, lý do nhận nuôi, liên hệ khẩn cấp, và người tham khảo.",
       });
     }
 
     // 7. Tạo đơn mới
     const newApp = new Adoption({
+    // 7. Tạo đơn mới
+    const newApp = new Adoption({
       pet: petId,
       applicant: {
         user: req.user.userId,
+        user: req.user.userId,
         name: user.name,
         email: user.email,
+        phone: user.phone || "",
         phone: user.phone || "",
       },
       livingArrangement,
@@ -122,12 +153,19 @@ router.post("/apply/:petId", auth, async (req, res) => {
     });
 
     await newApp.save();
+    await newApp.save();
 
+    return res.status(201).json({
+      message: "Đơn nhận nuôi đã được gửi thành công.",
+      application: newApp,
     return res.status(201).json({
       message: "Đơn nhận nuôi đã được gửi thành công.",
       application: newApp,
     });
   } catch (error) {
+    console.error("❌ Lỗi khi gửi đơn nhận nuôi:", error);
+    return res.status(500).json({
+      message: "Lỗi server khi gửi đơn nhận nuôi.",
     console.error("❌ Lỗi khi gửi đơn nhận nuôi:", error);
     return res.status(500).json({
       message: "Lỗi server khi gửi đơn nhận nuôi.",
@@ -146,12 +184,16 @@ router.get("/my-applications", auth, async (req, res) => {
     const applications = await Adoption.find({
       "applicant.user": req.user.userId,
     })
+    const applications = await Adoption.find({
+      "applicant.user": req.user.userId,
+    })
       .populate("pet", "name images species breed age gender")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
 
     const total = await Adoption.countDocuments({
+      "applicant.user": req.user.userId,
       "applicant.user": req.user.userId,
     });
 
@@ -173,6 +215,7 @@ router.get("/my-applications", auth, async (req, res) => {
 router.get("/requests", auth, async (req, res) => {
   try {
     // Get pets owned by the user
+    const userPets = await Pet.find({ owner: req.user.userId }).select("_id");
     const userPets = await Pet.find({ owner: req.user.userId }).select("_id");
     const petIds = userPets.map((pet) => pet._id);
 
@@ -238,7 +281,9 @@ router.get("/:id", auth, async (req, res) => {
 
     // Check if user is authorized to view this application
     const isPetOwner = application.pet.owner.toString() === req.user.userId;
+    const isPetOwner = application.pet.owner.toString() === req.user.userId;
     const isApplicant =
+      application.applicant.user._id.toString() === req.user.userId;
       application.applicant.user._id.toString() === req.user.userId;
 
     if (!isPetOwner && !isApplicant && req.user.role !== "admin") {
@@ -280,6 +325,7 @@ router.put("/:id/status", auth, async (req, res) => {
 
     // Check if user is the pet owner
     if (
+      application.pet.owner.toString() !== req.user.userId &&
       application.pet.owner.toString() !== req.user.userId &&
       req.user.role !== "admin"
     ) {
@@ -331,6 +377,7 @@ router.put("/:id/schedule-meeting", auth, async (req, res) => {
     // Check if user is the pet owner
     if (
       application.pet.owner.toString() !== req.user.userId &&
+      application.pet.owner.toString() !== req.user.userId &&
       req.user.role !== "admin"
     ) {
       return res
@@ -374,6 +421,7 @@ router.delete("/:id", auth, async (req, res) => {
 
     // Check if user is the applicant
     if (application.applicant.user.toString() !== req.user.userId) {
+    if (application.applicant.user.toString() !== req.user.userId) {
       return res
         .status(403)
         .json({ message: "Bạn không có quyền hủy đơn nhận nuôi này" });
@@ -400,6 +448,7 @@ router.delete("/:id", auth, async (req, res) => {
 router.post("/send-otp", auth, async (req, res) => {
   try {
     const user = await User.findById(req.user.userId);
+    const user = await User.findById(req.user.userId);
     if (!user || !user.phone) {
       return res
         .status(400)
@@ -410,6 +459,7 @@ router.post("/send-otp", auth, async (req, res) => {
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 phút
 
     await Otp.findOneAndUpdate(
+      { userId: req.user.userId },
       { userId: req.user.userId },
       { otp: otpCode, expiresAt },
       { upsert: true, new: true }
