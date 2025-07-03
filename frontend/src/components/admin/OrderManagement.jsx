@@ -79,7 +79,7 @@ export const OrderManagementBase = ({
     updateOrderStatusApi,
     canUpdateStatus = true,
     title = "Quản lý đơn hàng",
-    searchUserPlaceholder = "Tìm theo ID khách hàng",
+    searchUserPlaceholder = "Tìm theo Mã đơn",
     searchNamePlaceholder = "Tìm theo tên khách hàng",
     statusLabelsOverride,
     statusIconsOverride,
@@ -90,15 +90,15 @@ export const OrderManagementBase = ({
     const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
     const [loading, setLoading] = useState(false);
     const [activeTab, setActiveTab] = useState("pending");
-    const [userSearch, setUserSearch] = useState("");
+    const [orderNumberSearch, setOrderNumberSearch] = useState("");
     const [nameSearch, setNameSearch] = useState("");
     const [statusUpdateModal, setStatusUpdateModal] = useState({ visible: false, order: null });
 
-    const fetchOrders = async (status = "pending", page = 1, pageSize = 10, userId = "", userName = "") => {
+    const fetchOrders = async (status = "pending", page = 1, pageSize = 10, orderNumber = "", userName = "") => {
         setLoading(true);
         try {
             const params = { page, limit: pageSize, status };
-            if (userId) params.userId = userId;
+            if (orderNumber) params.orderNumber = orderNumber;
             if (userName) params.userName = userName;
             const res = await fetchOrdersApi(params);
 
@@ -120,7 +120,7 @@ export const OrderManagementBase = ({
     };
 
     useEffect(() => {
-        fetchOrders(activeTab, pagination.current, pagination.pageSize, userSearch, nameSearch);
+        fetchOrders(activeTab, pagination.current, pagination.pageSize, orderNumberSearch, nameSearch);
         // eslint-disable-next-line
     }, [activeTab, pagination.current, pagination.pageSize]);
 
@@ -133,14 +133,14 @@ export const OrderManagementBase = ({
         setPagination((prev) => ({ ...prev, current: 1 }));
     };
 
-    const handleUserSearch = (value) => {
-        setUserSearch(value);
+    const handleOrderNumberSearch = (value) => {
+        setOrderNumberSearch(value);
         fetchOrders(activeTab, 1, pagination.pageSize, value, nameSearch);
     };
 
     const handleNameSearch = (value) => {
         setNameSearch(value);
-        fetchOrders(activeTab, 1, pagination.pageSize, userSearch, value);
+        fetchOrders(activeTab, 1, pagination.pageSize, orderNumberSearch, value);
     };
 
     const handleChangeOrderStatus = async (order, newStatus) => {
@@ -149,11 +149,11 @@ export const OrderManagementBase = ({
             message.success("Đã cập nhật trạng thái đơn hàng");
 
             // Cập nhật lại dữ liệu cho cả trạng thái cũ và mới
-            fetchOrders(activeTab, pagination.current, pagination.pageSize, userSearch, nameSearch);
+            fetchOrders(activeTab, pagination.current, pagination.pageSize, orderNumberSearch, nameSearch);
 
             // Nếu order được chuyển sang trạng thái khác, cập nhật tab đó
             if (newStatus !== activeTab) {
-                fetchOrders(newStatus, 1, pagination.pageSize, userSearch, nameSearch);
+                fetchOrders(newStatus, 1, pagination.pageSize, orderNumberSearch, nameSearch);
             }
 
             setStatusUpdateModal({ visible: false, order: null });
@@ -275,9 +275,9 @@ export const OrderManagementBase = ({
                 <h2 className="text-2xl font-bold">{title}</h2>
                 <div className="flex gap-2">
                     <SearchFloatingLabel
-                        value={userSearch}
-                        onChange={setUserSearch}
-                        onSearch={handleUserSearch}
+                        value={orderNumberSearch}
+                        onChange={setOrderNumberSearch}
+                        onSearch={handleOrderNumberSearch}
                         placeholder={searchUserPlaceholder}
                         label={searchUserPlaceholder}
                         icon={<SearchOutlined style={{ fontSize: 16, marginRight: 4 }} />}
@@ -388,7 +388,7 @@ const OrderManagement = () => {
             updateOrderStatusApi={adminAPI.updateOrderStatus}
             canUpdateStatus={true}
             title="Quản lý đơn hàng"
-            searchUserPlaceholder="Tìm theo ID khách hàng"
+            searchUserPlaceholder="Tìm theo Mã đơn"
             searchNamePlaceholder="Tìm theo tên khách hàng"
             statusLabelsOverride={undefined}
             statusIconsOverride={statusIcons}

@@ -23,7 +23,7 @@ const ShopOrderManagement = () => {
             updateOrderStatusApi={shopAPI.updateOrderStatus}
             canUpdateStatus={true}
             title="Quản lý đơn hàng của shop"
-            searchUserPlaceholder="Tìm theo ID khách hàng"
+            searchUserPlaceholder="Tìm theo Mã đơn"
             searchNamePlaceholder="Tìm theo tên khách hàng"
             statusLabelsOverride={statusLabels}
             statusIconsOverride={statusIcons}

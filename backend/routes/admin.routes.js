@@ -101,10 +101,30 @@ router.put("/users/:id/role", async (req, res) => {
 // Lấy danh sách order (lọc theo trạng thái, phân trang)
 router.get("/orders", async (req, res) => {
   try {
-    const { page = 1, limit = 20, status, userId } = req.query;
+    const { page = 1, limit = 20, status, orderNumber, userName } = req.query;
     const filter = {};
     if (status) filter.status = status;
-    if (userId) filter.user = userId;
+
+    // Tìm theo mã đơn (orderNumber)
+    if (orderNumber) {
+      filter.orderNumber = { $regex: orderNumber, $options: "i" };
+    }
+
+    let userIds = [];
+    if (userName) {
+      const users = await User.find({ name: { $regex: userName, $options: "i" } }).select("_id");
+      userIds = users.map(u => u._id);
+      if (userIds.length > 0) {
+        filter.user = { $in: userIds };
+      } else {
+        // Không tìm thấy user nào, trả về rỗng
+        return res.json({
+          orders: [],
+          pagination: { current: parseInt(page), pages: 0, total: 0 }
+        });
+      }
+    }
+
     const skip = (parseInt(page) - 1) * parseInt(limit);
     const orders = await Order.find(filter)
       .populate("user", "name email role")
