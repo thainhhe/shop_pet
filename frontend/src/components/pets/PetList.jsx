@@ -21,6 +21,7 @@ const PetList = () => {
     city: "",
     isForAdoption: "",
     search: "",
+    sort: "newest",
   });
 
   useEffect(() => {
@@ -124,6 +125,7 @@ const PetList = () => {
               <select
                 id="sort"
                 className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={filters.sort}
                 onChange={(e) => handleFilterChange({ sort: e.target.value })}
               >
                 <option value="newest">Mới nhất</option>

@@ -111,6 +111,15 @@ export const adoptionAPI = {
   cancelApplication: (id) => api.delete(`/adoptions/${id}`),
 };
 
+// Chat API - Fixed to use the correct api instance
+export const chatAPI = {
+  getChats: () => api.get("/chat"),
+  createChat: (data) => api.post("/chat/create", data),
+  getMessages: (chatId, page = 1, limit = 50) =>
+    api.get(`/chat/${chatId}/messages?page=${page}&limit=${limit}`),
+  getChatPartners: (type) => api.get(`/chat/partners?type=${type}`),
+};
+
 // Upload API
 export const uploadAPI = {
   uploadSingle: (file) => {
@@ -133,7 +142,7 @@ export const uploadAPI = {
 // Hàm gửi tin nhắn đến chatbot
 export const sendChatMessage = async (message, history) => {
   try {
-    const response = await axios.post(`${API_URL}/chatbot/chat`, {
+    const response = await api.post("/chatbot/chat", {
       message,
       history,
     });
@@ -143,6 +152,7 @@ export const sendChatMessage = async (message, history) => {
     throw error;
   }
 };
+
 // Admin API
 export const adminAPI = {
   // User Management

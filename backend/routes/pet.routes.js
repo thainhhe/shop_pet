@@ -39,6 +39,7 @@ router.get(
         city,
         isForAdoption,
         search,
+        sort = "newest",
       } = req.query;
 
       // Build filter object
@@ -62,11 +63,24 @@ router.get(
         filter.$text = { $search: search };
       }
 
+      // Build sort object
+      const sortOption = {};
+      if (sort === "price_low") {
+        sortOption.price = 1;
+      } else if (sort === "price_high") {
+        sortOption.price = -1;
+      } else if (sort === "name") {
+        sortOption.name = 1;
+      } else {
+        // Mặc định là 'newest'
+        sortOption.createdAt = -1;
+      }
+
       const skip = (Number.parseInt(page) - 1) * Number.parseInt(limit);
 
       const pets = await Pet.find(filter)
         .populate("owner", "name avatar")
-        .sort({ createdAt: -1 })
+        .sort(sortOption)
         .skip(skip)
         .limit(Number.parseInt(limit));
 
@@ -214,9 +228,12 @@ router.post(
       // Handle uploaded images
       const images = req.files
         ? req.files.map((file) => {
-            const url = process.env.NODE_ENV === 'production'
-              ? file.path // Cloudinary path
-              : `${req.protocol}://${req.get('host')}/uploads/${file.filename}`; // Local path
+            const url =
+              process.env.NODE_ENV === "production"
+                ? file.path // Cloudinary path
+                : `${req.protocol}://${req.get("host")}/uploads/${
+                    file.filename
+                  }`; // Local path
             return { url, publicId: file.filename };
           })
         : [];
@@ -346,26 +363,29 @@ router.put(
       // Handle new uploaded images
       if (req.files && req.files.length > 0) {
         const newImages = req.files.map((file) => {
-            const url = process.env.NODE_ENV === 'production'
+          const url =
+            process.env.NODE_ENV === "production"
               ? file.path
-              : `${req.protocol}://${req.get('host')}/uploads/${file.filename}`;
-            return { url, publicId: file.filename };
-          });
+              : `${req.protocol}://${req.get("host")}/uploads/${file.filename}`;
+          return { url, publicId: file.filename };
+        });
         updateData.images = [...(pet.images || []), ...newImages];
       }
-      
+
       // Handle image deletions
       let imagesToDelete = [];
       if (req.body.deleteImages) {
-          imagesToDelete = Array.isArray(req.body.deleteImages) ? req.body.deleteImages : [req.body.deleteImages];
+        imagesToDelete = Array.isArray(req.body.deleteImages)
+          ? req.body.deleteImages
+          : [req.body.deleteImages];
       }
-      
+
       // Filter out deleted images from the existing list
       if (imagesToDelete.length > 0) {
-          const remainingImages = (updateData.images || pet.images).filter(
-            (img) => !imagesToDelete.includes(img.publicId)
-          );
-          updateData.images = remainingImages;
+        const remainingImages = (updateData.images || pet.images).filter(
+          (img) => !imagesToDelete.includes(img.publicId)
+        );
+        updateData.images = remainingImages;
       }
 
       console.log("Update data prepared, updating pet...");
@@ -408,8 +428,10 @@ router.delete("/:id", auth, async (req, res) => {
     }
 
     // Check if the pet is available before deleting
-    if (pet.status !== 'available') {
-        return res.status(400).json({ message: "Cannot delete a pet that is not available." });
+    if (pet.status !== "available") {
+      return res
+        .status(400)
+        .json({ message: "Cannot delete a pet that is not available." });
     }
 
     await Pet.findByIdAndDelete(req.params.id);
