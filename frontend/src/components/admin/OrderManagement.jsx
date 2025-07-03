@@ -37,7 +37,7 @@ const SearchFloatingLabel = ({ value, onChange, onSearch, placeholder, label, ic
     );
 };
 
-const statusLabels = {
+export const statusLabels = {
     pending: "Chờ xác nhận",
     confirmed: "Đã xác nhận",
     processing: "Đang chuẩn bị",
@@ -46,7 +46,7 @@ const statusLabels = {
     cancelled: "Đã hủy",
 };
 
-const statusColors = {
+export const statusColors = {
     pending: "default",
     confirmed: "blue",
     processing: "orange",
@@ -55,7 +55,7 @@ const statusColors = {
     cancelled: "red",
 };
 
-const statusIcons = {
+export const statusIcons = {
     pending: <ClockCircleOutlined />,
     confirmed: <CheckCircleOutlined />,
     processing: <EditOutlined />,
@@ -63,6 +63,7 @@ const statusIcons = {
     delivered: <CheckOutlined />,
     cancelled: <CloseCircleOutlined />,
 };
+
 
 // Thêm payment status labels và colors
 const paymentStatusLabels = {
@@ -88,6 +89,7 @@ const paymentStatusIcons = {
 
 // Định nghĩa workflow cho việc chuyển trạng thái
 const statusWorkflow = {
+export const statusWorkflow = {
     pending: ["confirmed", "cancelled"],
     confirmed: ["processing", "cancelled"],
     processing: ["shipped", "cancelled"],
@@ -96,22 +98,34 @@ const statusWorkflow = {
     cancelled: [], // Không thể chuyển từ cancelled
 };
 
-const OrderManagement = () => {
+// Tách phần core thành OrderManagementBase
+export const OrderManagementBase = ({
+    fetchOrdersApi,
+    updateOrderStatusApi,
+    canUpdateStatus = true,
+    title = "Quản lý đơn hàng",
+    searchUserPlaceholder = "Tìm theo Mã đơn",
+    searchNamePlaceholder = "Tìm theo tên khách hàng",
+    statusLabelsOverride,
+    statusIconsOverride,
+    statusColorsOverride,
+    statusWorkflowOverride,
+}) => {
     const [orders, setOrders] = useState({});
     const [pagination, setPagination] = useState({ current: 1, pageSize: 10, total: 0 });
     const [loading, setLoading] = useState(false);
     const [activeTab, setActiveTab] = useState("pending");
-    const [userSearch, setUserSearch] = useState("");
+    const [orderNumberSearch, setOrderNumberSearch] = useState("");
     const [nameSearch, setNameSearch] = useState("");
     const [statusUpdateModal, setStatusUpdateModal] = useState({ visible: false, order: null });
 
-    const fetchOrders = async (status = "pending", page = 1, pageSize = 10, userId = "", userName = "") => {
+    const fetchOrders = async (status = "pending", page = 1, pageSize = 10, orderNumber = "", userName = "") => {
         setLoading(true);
         try {
             const params = { page, limit: pageSize, status };
-            if (userId) params.userId = userId;
+            if (orderNumber) params.orderNumber = orderNumber;
             if (userName) params.userName = userName;
-            const res = await adminAPI.getOrders(params);
+            const res = await fetchOrdersApi(params);
 
             setOrders(prev => ({
                 ...prev,
@@ -131,7 +145,7 @@ const OrderManagement = () => {
     };
 
     useEffect(() => {
-        fetchOrders(activeTab, pagination.current, pagination.pageSize, userSearch, nameSearch);
+        fetchOrders(activeTab, pagination.current, pagination.pageSize, orderNumberSearch, nameSearch);
         // eslint-disable-next-line
     }, [activeTab, pagination.current, pagination.pageSize]);
 
@@ -144,27 +158,27 @@ const OrderManagement = () => {
         setPagination((prev) => ({ ...prev, current: 1 }));
     };
 
-    const handleUserSearch = (value) => {
-        setUserSearch(value);
+    const handleOrderNumberSearch = (value) => {
+        setOrderNumberSearch(value);
         fetchOrders(activeTab, 1, pagination.pageSize, value, nameSearch);
     };
 
     const handleNameSearch = (value) => {
         setNameSearch(value);
-        fetchOrders(activeTab, 1, pagination.pageSize, userSearch, value);
+        fetchOrders(activeTab, 1, pagination.pageSize, orderNumberSearch, value);
     };
 
     const handleChangeOrderStatus = async (order, newStatus) => {
         try {
-            await adminAPI.updateOrderStatus(order._id, newStatus);
+            await updateOrderStatusApi(order._id, newStatus);
             message.success("Đã cập nhật trạng thái đơn hàng");
 
             // Cập nhật lại dữ liệu cho cả trạng thái cũ và mới
-            fetchOrders(activeTab, pagination.current, pagination.pageSize, userSearch, nameSearch);
+            fetchOrders(activeTab, pagination.current, pagination.pageSize, orderNumberSearch, nameSearch);
 
             // Nếu order được chuyển sang trạng thái khác, cập nhật tab đó
             if (newStatus !== activeTab) {
-                fetchOrders(newStatus, 1, pagination.pageSize, userSearch, nameSearch);
+                fetchOrders(newStatus, 1, pagination.pageSize, orderNumberSearch, nameSearch);
             }
 
             setStatusUpdateModal({ visible: false, order: null });
@@ -280,14 +294,14 @@ const OrderManagement = () => {
             width: "10%",
             align: "right",
             render: (_, order) => {
-                const availableStatuses = statusWorkflow[status] || [];
+                const availableStatuses = statusWorkflowOverride[status] || [];
                 return (
                     <Space>
-                        {availableStatuses.length > 0 && (
+                        {canUpdateStatus && availableStatuses.length > 0 && (
                             <Button
                                 type="primary"
                                 size="small"
-                                icon={statusIcons[availableStatuses[0]]}
+                                icon={statusIconsOverride[availableStatuses[0]]}
                                 onClick={() => openStatusUpdateModal(order)}
                             >
                                 Cập nhật
@@ -300,11 +314,11 @@ const OrderManagement = () => {
     ];
 
     const getTabItems = () => {
-        return Object.entries(statusLabels).map(([key, label]) => ({
+        return Object.entries(statusLabelsOverride || statusLabels).map(([key, label]) => ({
             key,
             label: (
                 <span>
-                    {statusIcons[key]} {label}
+                    {statusIconsOverride && statusIconsOverride[key]} {label}
                 </span>
             ),
         }));
@@ -313,22 +327,22 @@ const OrderManagement = () => {
     return (
         <div>
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold">Quản lý đơn hàng</h2>
+                <h2 className="text-2xl font-bold">{title}</h2>
                 <div className="flex gap-2">
                     <SearchFloatingLabel
-                        value={userSearch}
-                        onChange={setUserSearch}
-                        onSearch={handleUserSearch}
-                        placeholder="Tìm theo ID khách hàng"
-                        label="Tìm theo ID khách hàng"
+                        value={orderNumberSearch}
+                        onChange={setOrderNumberSearch}
+                        onSearch={handleOrderNumberSearch}
+                        placeholder={searchUserPlaceholder}
+                        label={searchUserPlaceholder}
                         icon={<SearchOutlined style={{ fontSize: 16, marginRight: 4 }} />}
                     />
                     <SearchFloatingLabel
                         value={nameSearch}
                         onChange={setNameSearch}
                         onSearch={handleNameSearch}
-                        placeholder="Tìm theo tên khách hàng"
-                        label="Tìm theo tên khách hàng"
+                        placeholder={searchNamePlaceholder}
+                        label={searchNamePlaceholder}
                         icon={<SearchOutlined style={{ fontSize: 16, marginRight: 4 }} />}
                     />
                 </div>
@@ -386,8 +400,8 @@ const OrderManagement = () => {
                             </div>
                             <div className="text-sm text-gray-600">
                                 Trạng thái hiện tại:
-                                <Tag color={statusColors[statusUpdateModal.order.status]} className="ml-2">
-                                    {statusLabels[statusUpdateModal.order.status]}
+                                <Tag color={statusColorsOverride && statusColorsOverride[statusUpdateModal.order.status]} className="ml-2">
+                                    {statusLabelsOverride && statusLabelsOverride[statusUpdateModal.order.status]}
                                 </Tag>
                             </div>
                         </div>
@@ -401,10 +415,10 @@ const OrderManagement = () => {
                                 placeholder="Chọn trạng thái"
                                 onChange={(newStatus) => handleChangeOrderStatus(statusUpdateModal.order, newStatus)}
                             >
-                                {statusWorkflow[statusUpdateModal.order.status]?.map((status) => (
+                                {statusWorkflowOverride && statusWorkflowOverride[statusUpdateModal.order.status]?.map((status) => (
                                     <Option value={status} key={status}>
                                         <span>
-                                            {statusIcons[status]} {statusLabels[status]}
+                                            {statusIconsOverride && statusIconsOverride[status]} {statusLabelsOverride && statusLabelsOverride[status]}
                                         </span>
                                     </Option>
                                 ))}
@@ -422,3 +436,23 @@ const OrderManagement = () => {
 };
 
 export default OrderManagement;
+// ... giữ lại OrderManagement cũ để dùng cho admin
+const OrderManagement = () => {
+    return (
+        <OrderManagementBase
+            fetchOrdersApi={adminAPI.getOrders}
+            updateOrderStatusApi={adminAPI.updateOrderStatus}
+            canUpdateStatus={true}
+            title="Quản lý đơn hàng"
+            searchUserPlaceholder="Tìm theo Mã đơn"
+            searchNamePlaceholder="Tìm theo tên khách hàng"
+            statusLabelsOverride={undefined}
+            statusIconsOverride={statusIcons}
+            statusColorsOverride={statusColors}
+            statusWorkflowOverride={statusWorkflow}
+        />
+    );
+};
+
+export default OrderManagement; 
+

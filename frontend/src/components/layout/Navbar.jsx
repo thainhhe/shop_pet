@@ -41,16 +41,10 @@ const Navbar = () => {
                 Sản phẩm
               </Link>
               <Link
-                to="/adoption"
-                className="text-gray-900 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
+                to="/recommendations"
+                className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
               >
-                Nhận nuôi
-              </Link>
-              <Link
-                to="/community"
-                className="text-gray-900 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Cộng đồng
+                🤖 Gợi ý AI
               </Link>
             </div>
           </div>
@@ -71,11 +65,43 @@ const Navbar = () => {
                     </div>
                   </button>
 
+
                   {isUserMenuOpen && (
                     <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
                       <div className="px-4 py-2 text-sm text-gray-700 border-b">
                         <div className="font-medium">{user?.name}</div>
                         <div className="text-xs text-gray-500">{user?.email}</div>
+                  {isMenuOpen && (
+                    <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
+                      <div className="py-1">
+                        {user?.role === "user" && (
+                          <Link
+                            to="/orders"
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          >
+                            Đơn hàng của tôi
+                          </Link>
+                        )}
+
+                        <Link
+                          to="/profile"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          Hồ sơ cá nhân
+                        </Link>
+                        <Link
+                          to="/profile/preferences"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          Cập nhật sở thích
+                        </Link>
+                        <button
+                          onClick={handleLogout}
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          Đăng xuất
+                        </button>
                       </div>
 
                       <Link

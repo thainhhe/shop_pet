@@ -134,6 +134,19 @@ export const uploadAPI = {
   deleteImage: (publicId) => api.delete(`/upload/delete/${publicId}`),
 };
 
+// Hàm gửi tin nhắn đến chatbot
+export const sendChatMessage = async (message, history) => {
+  try {
+    const response = await axios.post(`${API_URL}/chatbot/chat`, {
+      message,
+      history,
+    });
+    return response.data; // Trả về { reply: "..." }
+  } catch (error) {
+    console.error("Error sending chat message:", error);
+    throw error;
+  }
+};
 // Admin API
 export const adminAPI = {
   // User Management
@@ -141,11 +154,20 @@ export const adminAPI = {
   updateUser: (id, userData) => api.put(`/admin/users/${id}`, userData),
   deleteUser: (id) => api.delete(`/admin/users/${id}`),
   changeUserRole: (id, role) => api.put(`/admin/users/${id}/role`, { role }),
-  
+
   // Order Management
   getOrders: (params) => api.get("/admin/orders", { params }),
-  updateOrderStatus: (id, status) => api.put(`/admin/orders/${id}/status`, { status }),
+  updateOrderStatus: (id, status) =>
+    api.put(`/admin/orders/${id}/status`, { status }),
   getStats: () => api.get("/admin/stats"),
+};
+
+// Recommendation API
+export const recommendationAPI = {
+  getPetRecommendations: () => api.get("/recommendation/pets"),
+  getExplanation: (petId) => api.post("/recommendation/explain", { petId }),
+  sendRecommendationChat: (message, history) =>
+    api.post("/recommendation/chat", { message, history }),
 };
 
 export default api;
