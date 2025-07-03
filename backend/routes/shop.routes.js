@@ -131,7 +131,7 @@ router.get('/pets', async (req, res) => {
 // GET /api/shop/orders
 router.get('/orders', async (req, res) => {
   try {
-    const { page = 1, limit = 10, status } = req.query;
+    const { page = 1, limit = 10, status, orderNumber, userName } = req.query;
     const shopId = req.user.userId;
 
     // Lấy tất cả sản phẩm và pet của shop
@@ -148,6 +148,21 @@ router.get('/orders', async (req, res) => {
       ]
     };
     if (status) filter.status = status;
+    if (orderNumber) filter.orderNumber = { $regex: orderNumber, $options: 'i' };
+    let userIds = [];
+    if (userName) {
+      const users = await User.find({ name: { $regex: userName, $options: 'i' } }).select('_id');
+      userIds = users.map(u => u._id);
+      if (userIds.length > 0) {
+        filter.user = { $in: userIds };
+      } else {
+        // Không tìm thấy user nào, trả về rỗng
+        return res.json({
+          orders: [],
+          pagination: { current: Number.parseInt(page), pages: 0, total: 0 }
+        });
+      }
+    }
 
     const skip = (Number.parseInt(page) - 1) * Number.parseInt(limit);
 
