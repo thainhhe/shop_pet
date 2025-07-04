@@ -122,7 +122,7 @@ export default function ChatWindow() {
             <ChatHeader participant={otherParticipant} chat={selectedChat} />
 
             {/* Debug Info - Remove this after fixing */}
-            {process.env.NODE_ENV === "development" && (
+            {/* {process.env.NODE_ENV === "development" && (
               <div className="bg-yellow-100 p-2 text-xs">
                 <strong>Debug Info:</strong>
                 <div>Chat ID: {debugInfo.chatId}</div>
@@ -136,7 +136,7 @@ export default function ChatWindow() {
                   {user ? Object.keys(user).join(", ") : "No user"}
                 </div>
               </div>
-            )}
+            )} */}
 
             <MessageList
               messages={chatMessages}

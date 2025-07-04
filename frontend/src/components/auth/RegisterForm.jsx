@@ -14,6 +14,7 @@ const RegisterForm = () => {
     phone: "",
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [formErrors, setFormErrors] = useState({});
 
   const { register, loading, error } = useAuth();
   const navigate = useNavigate();
@@ -25,13 +26,37 @@ const RegisterForm = () => {
     });
   };
 
+  const validate = () => {
+    const errors = {};
+    if (!formData.name.trim()) {
+      errors.name = "Họ và tên là bắt buộc.";
+    }
+    if (!formData.email) {
+      errors.email = "Email là bắt buộc.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = "Email không hợp lệ.";
+    }
+    if (!formData.phone) {
+      errors.phone = "Số điện thoại là bắt buộc.";
+    } else if (!/^\d{9,11}$/.test(formData.phone)) {
+      errors.phone = "Số điện thoại không hợp lệ.";
+    }
+    if (!formData.password) {
+      errors.password = "Mật khẩu là bắt buộc.";
+    } else if (formData.password.length < 6) {
+      errors.password = "Mật khẩu phải có ít nhất 6 ký tự.";
+    }
+    if (formData.password !== formData.confirmPassword) {
+      errors.confirmPassword = "Mật khẩu xác nhận không khớp.";
+    }
+    return errors;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (formData.password !== formData.confirmPassword) {
-      alert("Mật khẩu xác nhận không khớp!");
-      return;
-    }
+    const errors = validate();
+    setFormErrors(errors);
+    if (Object.keys(errors).length > 0) return;
 
     const { confirmPassword, ...userData } = formData;
     const result = await register(userData);
@@ -64,6 +89,15 @@ const RegisterForm = () => {
               {error}
             </div>
           )}
+          {Object.keys(formErrors).length > 0 && (
+            <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-4 py-3 rounded-md mb-2">
+              <ul className="list-disc pl-5">
+                {Object.values(formErrors).map((err, idx) => (
+                  <li key={idx}>{err}</li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           <div className="space-y-4">
             <div>
@@ -80,9 +114,14 @@ const RegisterForm = () => {
                 required
                 value={formData.name}
                 onChange={handleChange}
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${
+                  formErrors.name ? "border-red-500" : "border-gray-300"
+                } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
                 placeholder="Nhập họ và tên"
               />
+              {formErrors.name && (
+                <p className="text-red-500 text-xs mt-1">{formErrors.name}</p>
+              )}
             </div>
 
             <div>
@@ -99,9 +138,14 @@ const RegisterForm = () => {
                 required
                 value={formData.email}
                 onChange={handleChange}
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${
+                  formErrors.email ? "border-red-500" : "border-gray-300"
+                } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
                 placeholder="Nhập email của bạn"
               />
+              {formErrors.email && (
+                <p className="text-red-500 text-xs mt-1">{formErrors.email}</p>
+              )}
             </div>
 
             <div>
@@ -117,9 +161,14 @@ const RegisterForm = () => {
                 type="tel"
                 value={formData.phone}
                 onChange={handleChange}
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${
+                  formErrors.phone ? "border-red-500" : "border-gray-300"
+                } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
                 placeholder="Nhập số điện thoại"
               />
+              {formErrors.phone && (
+                <p className="text-red-500 text-xs mt-1">{formErrors.phone}</p>
+              )}
             </div>
 
             <div>
@@ -157,7 +206,9 @@ const RegisterForm = () => {
                   required
                   value={formData.password}
                   onChange={handleChange}
-                  className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                  className={`appearance-none relative block w-full px-3 py-2 border ${
+                    formErrors.password ? "border-red-500" : "border-gray-300"
+                  } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
                   placeholder="Nhập mật khẩu"
                 />
                 <button
@@ -168,6 +219,9 @@ const RegisterForm = () => {
                   {showPassword ? "🙈" : "👁️"}
                 </button>
               </div>
+              {formErrors.password && (
+                <p className="text-red-500 text-xs mt-1">{formErrors.password}</p>
+              )}
             </div>
 
             <div>
@@ -184,9 +238,16 @@ const RegisterForm = () => {
                 required
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                className={`mt-1 appearance-none relative block w-full px-3 py-2 border ${
+                  formErrors.confirmPassword ? "border-red-500" : "border-gray-300"
+                } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
                 placeholder="Nhập lại mật khẩu"
               />
+              {formErrors.confirmPassword && (
+                <p className="text-red-500 text-xs mt-1">
+                  {formErrors.confirmPassword}
+                </p>
+              )}
             </div>
           </div>
 

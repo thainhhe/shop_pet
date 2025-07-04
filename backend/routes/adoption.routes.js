@@ -6,19 +6,22 @@ const Adoption = require("../models/Adoption");
 const Pet = require("../models/Pet");
 const User = require("../models/User");
 const Otp = require("../models/Otp");
+
+// Hàm tạo mã OTP
 const generateOtp = () =>
   Math.floor(100000 + Math.random() * 900000).toString();
 
+// Nộp đơn nhận nuôi
 router.post("/apply/:petId", auth, async (req, res) => {
   try {
     const petId = req.params.petId;
 
-    // 1. Validate pet ID
+    // 1. Validate ID thú cưng
     if (!mongoose.Types.ObjectId.isValid(petId)) {
       return res.status(400).json({ message: "ID thú cưng không hợp lệ" });
     }
 
-    // 2. Tìm pet còn 'available'
+    // 2. Tìm thú cưng có trạng thái 'available'
     const pet = await Pet.findById(petId);
     if (!pet) {
       return res.status(404).json({ message: "Không tìm thấy thú cưng" });
@@ -29,7 +32,7 @@ router.post("/apply/:petId", auth, async (req, res) => {
         .json({ message: "Thú cưng này không có sẵn để nhận nuôi" });
     }
 
-    // 3. Kiểm tra user có pending/approved đơn nào với pet này chưa
+    // 3. Kiểm tra xem người dùng đã có đơn chờ/duyệt cho thú cưng này chưa
     const existApp = await Adoption.findOne({
       pet: petId,
       "applicant.user": req.user.userId,
@@ -42,26 +45,17 @@ router.post("/apply/:petId", auth, async (req, res) => {
       });
     }
 
+    // 4. Lấy thông tin người dùng từ DB
     const user = await User.findById(req.user.userId).select(
       "name email phone"
     );
-    console.log("DEBUG - JWT user id:", req.user.userId);
-    console.log("DEBUG - user found:", user);
     if (!user) {
       return res
         .status(400)
         .json({ message: "Không tìm thấy thông tin người dùng." });
     }
 
-    // 4. Lấy thông tin user từ DB
-
-    if (!user) {
-      return res
-        .status(400)
-        .json({ message: "Không tìm thấy thông tin người dùng." });
-    }
-
-    // 5. Lấy data từ form (frontend)
+    // 5. Lấy dữ liệu từ form
     const {
       livingArrangement,
       hasOtherPets,
@@ -98,7 +92,7 @@ router.post("/apply/:petId", auth, async (req, res) => {
       });
     }
 
-    // 7. Tạo đơn mới
+    // 7. Tạo đơn nhận nuôi mới
     const newApp = new Adoption({
       pet: petId,
       applicant: {
@@ -136,7 +130,7 @@ router.post("/apply/:petId", auth, async (req, res) => {
   }
 });
 
-// Get user's adoption applications
+// Lấy danh sách đơn nhận nuôi của người dùng
 router.get("/my-applications", auth, async (req, res) => {
   try {
     const page = Number.parseInt(req.query.page) || 1;
@@ -169,21 +163,17 @@ router.get("/my-applications", auth, async (req, res) => {
   }
 });
 
-// Get adoption requests for pet owner
+// Lấy danh sách yêu cầu nhận nuôi cho chủ sở hữu thú cưng
 router.get("/requests", auth, async (req, res) => {
   try {
-    // Get pets owned by the user
+    // Lấy danh sách thú cưng của người dùng
     const userPets = await Pet.find({ owner: req.user.userId }).select("_id");
     const petIds = userPets.map((pet) => pet._id);
 
     if (petIds.length === 0) {
       return res.json({
         applications: [],
-        pagination: {
-          total: 0,
-          page: 1,
-          pages: 0,
-        },
+        pagination: { total: 0, page: 1, pages: 0 },
       });
     }
 
@@ -219,7 +209,7 @@ router.get("/requests", auth, async (req, res) => {
   }
 });
 
-// Get adoption application by ID
+// Lấy thông tin chi tiết một đơn nhận nuôi bằng ID
 router.get("/:id", auth, async (req, res) => {
   try {
     const adoptionId = req.params.id;
@@ -236,7 +226,7 @@ router.get("/:id", auth, async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy đơn nhận nuôi" });
     }
 
-    // Check if user is authorized to view this application
+    // Kiểm tra quyền xem đơn
     const isPetOwner = application.pet.owner.toString() === req.user.userId;
     const isApplicant =
       application.applicant.user._id.toString() === req.user.userId;
@@ -254,7 +244,7 @@ router.get("/:id", auth, async (req, res) => {
   }
 });
 
-// Update adoption application status (for pet owners)
+// Cập nhật trạng thái đơn (dành cho chủ thú cưng/admin)
 router.put("/:id/status", auth, async (req, res) => {
   try {
     const adoptionId = req.params.id;
@@ -278,7 +268,7 @@ router.put("/:id/status", auth, async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy đơn nhận nuôi" });
     }
 
-    // Check if user is the pet owner
+    // Kiểm tra quyền cập nhật
     if (
       application.pet.owner.toString() !== req.user.userId &&
       req.user.role !== "admin"
@@ -288,12 +278,10 @@ router.put("/:id/status", auth, async (req, res) => {
         .json({ message: "Bạn không có quyền cập nhật đơn nhận nuôi này" });
     }
 
-    // Update application
     application.status = status;
     if (notes) {
       application.reviewNotes = notes;
     }
-
     await application.save();
 
     res.json({
@@ -306,7 +294,7 @@ router.put("/:id/status", auth, async (req, res) => {
   }
 });
 
-// Schedule a meeting (for pet owners)
+// Lên lịch gặp mặt (dành cho chủ thú cưng/admin)
 router.put("/:id/schedule-meeting", auth, async (req, res) => {
   try {
     const adoptionId = req.params.id;
@@ -328,7 +316,7 @@ router.put("/:id/schedule-meeting", auth, async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy đơn nhận nuôi" });
     }
 
-    // Check if user is the pet owner
+    // Kiểm tra quyền
     if (
       application.pet.owner.toString() !== req.user.userId &&
       req.user.role !== "admin"
@@ -338,13 +326,11 @@ router.put("/:id/schedule-meeting", auth, async (req, res) => {
         .json({ message: "Bạn không có quyền lên lịch gặp mặt" });
     }
 
-    // Update meeting schedule
     application.meetingSchedule = {
       date: new Date(date),
       location,
       notes: notes || "",
     };
-
     await application.save();
 
     res.json({
@@ -357,7 +343,7 @@ router.put("/:id/schedule-meeting", auth, async (req, res) => {
   }
 });
 
-// Cancel adoption application (for applicants)
+// Hủy đơn nhận nuôi (dành cho người nộp đơn)
 router.delete("/:id", auth, async (req, res) => {
   try {
     const adoptionId = req.params.id;
@@ -372,21 +358,19 @@ router.delete("/:id", auth, async (req, res) => {
       return res.status(404).json({ message: "Không tìm thấy đơn nhận nuôi" });
     }
 
-    // Check if user is the applicant
+    // Kiểm tra quyền hủy đơn
     if (application.applicant.user.toString() !== req.user.userId) {
       return res
         .status(403)
         .json({ message: "Bạn không có quyền hủy đơn nhận nuôi này" });
     }
 
-    // Check if application can be cancelled
     if (application.status !== "pending") {
       return res
         .status(400)
         .json({ message: "Chỉ có thể hủy đơn đang chờ xử lý" });
     }
 
-    // Update status to cancelled
     application.status = "cancelled";
     await application.save();
 
@@ -397,6 +381,7 @@ router.delete("/:id", auth, async (req, res) => {
   }
 });
 
+// Gửi mã OTP
 router.post("/send-otp", auth, async (req, res) => {
   try {
     const user = await User.findById(req.user.userId);
@@ -416,7 +401,7 @@ router.post("/send-otp", auth, async (req, res) => {
     );
 
     console.log(`📤 OTP gửi đến ${user.phone}: ${otpCode}`);
-    // 🔐 Tích hợp với Twilio hoặc dịch vụ thật ở đây
+    // 🔐 Tích hợp với dịch vụ SMS gateway thật ở đây
 
     res.json({ message: "OTP đã được gửi về điện thoại." });
   } catch (err) {
@@ -425,23 +410,28 @@ router.post("/send-otp", auth, async (req, res) => {
   }
 });
 
+// Xác minh mã OTP
 router.post("/verify-otp", auth, async (req, res) => {
-  const { otp } = req.body;
-  const userId = req.user.userId;
+  try {
+    const { otp } = req.body;
+    const userId = req.user.userId;
 
-  const record = await Otp.findOne({ userId });
+    const record = await Otp.findOne({ userId });
 
-  if (!record)
-    return res.status(400).json({ message: "Bạn chưa yêu cầu mã OTP" });
-  if (record.otp !== otp)
-    return res.status(400).json({ message: "Mã OTP không đúng" });
-  if (record.expiresAt < new Date())
-    return res.status(400).json({ message: "Mã OTP đã hết hạn" });
+    if (!record)
+      return res.status(400).json({ message: "Bạn chưa yêu cầu mã OTP" });
+    if (record.otp !== otp)
+      return res.status(400).json({ message: "Mã OTP không đúng" });
+    if (record.expiresAt < new Date())
+      return res.status(400).json({ message: "Mã OTP đã hết hạn" });
 
-  // ✅ Cập nhật trạng thái đơn nếu cần
-  await Otp.deleteOne({ userId }); // Xoá mã OTP đã dùng
+    await Otp.deleteOne({ userId }); // Xoá mã OTP đã dùng
 
-  res.json({ message: "Xác minh OTP thành công" });
+    res.json({ message: "Xác minh OTP thành công" });
+  } catch (error) {
+    console.error("Lỗi xác minh OTP:", error);
+    res.status(500).json({ message: "Lỗi server khi xác minh OTP" });
+  }
 });
 
 module.exports = router;

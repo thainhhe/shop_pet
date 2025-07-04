@@ -3,6 +3,8 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { ChatProvider } from "./contexts/ChatContext";
 import LoginForm from "./components/auth/LoginForm";
 import RegisterForm from "./components/auth/RegisterForm";
+import ForgotPassword from "./components/auth/ForgotPassword";
+import ResetPassword from "./components/auth/ResetPassword";
 import Navbar from "./components/layout/Navbar";
 import HomePage from "./pages/HomePage";
 import PetList from "./components/pets/PetList";
@@ -22,6 +24,10 @@ import OrderList from "./components/orders/OrderList";
 import OrderDetail from "./components/orders/OrderDetail";
 import AdoptionDetail from "./components/adoption/AdoptionDetail";
 import OtpVerification from "./components/adoption/OtpVerification";
+import Chatbot from "./components/chatbot/Chatbot";
+import UserManagement from "./components/admin/UserManagement";
+import OrderManagement from "./components/admin/OrderManagement";
+import UserProfile from "./pages/UserProfile";
 import RecommendationPage from "./pages/RecommendationPage";
 import UserPreferencesForm from "./components/profile/UserPreferencesForm";
 import ChatWindow from "./components/chat/ChatWindow";
@@ -52,22 +58,35 @@ function App() {
                     <Route path="/" element={<HomePage />} />
                     <Route path="/login" element={<LoginForm />} />
                     <Route path="/register" element={<RegisterForm />} />
+                    <Route
+                      path="/forgot-password"
+                      element={<ForgotPassword />}
+                    />
+                    <Route
+                      path="/reset-password/:token"
+                      element={<ResetPassword />}
+                    />
                     <Route path="/pets" element={<PetList />} />
                     <Route path="/pets/:id" element={<PetDetail />} />
                     <Route path="/products" element={<ProductList />} />
+                    <Route path="/cart" element={<CartPage />} />
+                    <Route path="/checkout" element={<CheckoutPage />} />
+                    <Route path="/adoption/:id" element={<AdoptionDetail />} />
+                    <Route
+                      path="/otp-verification"
+                      element={<OtpVerification />}
+                    />
                     <Route path="/products/:id" element={<ProductDetail />} />
 
-                    {/* Chat route */}
+                    {/* Protected routes */}
                     <Route
-                      path="/chat"
+                      path="/profile"
                       element={
                         <ProtectedRoute>
-                          <ChatWindow />
+                          <UserProfile />
                         </ProtectedRoute>
                       }
                     />
-
-                    {/* Protected routes */}
                     <Route
                       path="/shop-dashboard"
                       element={
