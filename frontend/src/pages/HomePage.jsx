@@ -24,7 +24,7 @@ const HomePage = () => {
                 Khám phá thú cưng
               </Link>
               <Link
-                to="/adoption"
+                to="/pets"
                 className="bg-transparent border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors"
               >
                 Nhận nuôi ngay

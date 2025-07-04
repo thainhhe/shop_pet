@@ -88,6 +88,14 @@ function App() {
                       }
                     />
                     <Route
+                      path="/chat"
+                      element={
+                        <ProtectedRoute>
+                          <ChatWindow />
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
                       path="/shop-dashboard"
                       element={
                         <ProtectedRoute requiredRole={["shop_owner"]}>
