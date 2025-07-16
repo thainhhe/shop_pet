@@ -123,8 +123,9 @@ export function ChatProvider({ children }) {
     if (isAuthenticated && token && !state.socket) {
       // Sử dụng import.meta.env thay vì process.env
       const serverUrl =
-        import.meta.env.VITE_SERVER_URL || "http://localhost:5000";
+        // import.meta.env.VITE_SERVER_URL || "http://localhost:5000";
 
+        import.meta.env.VITE_SERVER_URL || "https://media.2handshop.id.vn";
       const socket = io(serverUrl, {
         auth: { token },
       });

@@ -10,7 +10,7 @@ const CheckPayment = ({ totalMoney, txt, onPaymentSuccess }) => {
       async function checkPay() {
         try {
           const response = await fetch(
-            "https://script.google.com/macros/s/AKfycbz2uOjG74YhORzw9TtEIJHEAxtD6Y_NFSacNIIwXQywg-3lSciDpNxT-_XybWu5jGLb/exec"
+            "https://script.google.com/macros/s/AKfycbxVRtZRZcKScaaGpLwlTp4VJeLKeJAcVZ8i0SBTOnhY4AXF4fw4fab6OQf5psWTY9nQAg/exec"
           );
           const data = await response.json();
 

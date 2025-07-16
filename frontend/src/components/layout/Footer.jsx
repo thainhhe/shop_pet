@@ -5,7 +5,11 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center mb-4">
-              <span className="text-2xl font-bold">🐾 PetConnect</span>
+              <img
+                src="https://res.cloudinary.com/dbaj4wc5p/image/upload/v1751600665/PetConnect_o8ex5x.png"
+                alt="PetConnect Logo"
+                className="h-10 w-auto"
+              />
             </div>
             <p className="text-gray-300 mb-4">
               Nền tảng kết nối cửa hàng thú cưng, trung tâm cứu hộ và người yêu

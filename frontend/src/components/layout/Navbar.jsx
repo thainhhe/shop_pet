@@ -28,15 +28,18 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           {/* === Phần bên trái: Logo & Các liên kết Desktop === */}
+          {/* https://res.cloudinary.com/dbaj4wc5p/image/upload/v1751600665/PetConnect_o8ex5x.png */}
           <div className="flex items-center">
             <Link
               to="/"
               className="flex-shrink-0 flex items-center"
               onClick={closeAllMenus}
             >
-              <span className="text-2xl font-bold text-blue-600">
-                🐾 PetConnect
-              </span>
+              <img
+                src="https://res.cloudinary.com/dbaj4wc5p/image/upload/v1751600665/PetConnect_o8ex5x.png"
+                alt="PetConnect Logo"
+                className="h-10 w-auto"
+              />
             </Link>
             <div className="hidden md:ml-6 md:flex md:space-x-8">
               <Link
