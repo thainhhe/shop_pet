@@ -13,7 +13,7 @@ const server = http.createServer(app);
 // Socket.io setup with CORS
 const io = socketIo(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    origin: ["https://petconnect.pro.vn", "http://localhost:3000"],
     methods: ["GET", "POST"],
     credentials: true,
   },
